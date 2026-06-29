@@ -35,7 +35,7 @@ module.exports = {
         const sideNetSign = (sideStats?.net_jp ?? 0) >= 0 ? '+' : '';
 
         const embed = new EmbedBuilder()
-            .setAuthor({ name: t('common.bot_name') })
+            .setAuthor({ name: t('common.bot_name'), iconURL: interaction.client.user.displayAvatarURL() })
             .setTitle(t('stats.embed.title', { user: target.username }))
             .setColor(COLORS.INFO)
             .addFields(

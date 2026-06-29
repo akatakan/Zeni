@@ -19,6 +19,7 @@ module.exports = {
         }
 
         const embed = new EmbedBuilder()
+            .setAuthor({ name: t('common.bot_name'), iconURL: interaction.client.user.displayAvatarURL() })
             .setTitle(t('leaderboard.embed.title'))
             .setDescription(t('leaderboard.embed.description'))
             .addFields(

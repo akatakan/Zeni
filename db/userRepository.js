@@ -50,10 +50,10 @@ const claimDailyBalance = async (userId, amount = 200) => {
 
 const deductBalance = async (userId, amount) => {
     const res = await pool.query(
-        'UPDATE users SET balance = balance - $1 WHERE user_id = $2 AND balance >= $1',
+        'UPDATE users SET balance = balance - $1 WHERE user_id = $2 AND balance >= $1 RETURNING balance',
         [amount, userId]
     );
-    return res.rowCount > 0;
+    return res.rowCount > 0 ? res.rows[0].balance : null;
 };
 
 const transferBalance = async (fromId, toId, amount) => {

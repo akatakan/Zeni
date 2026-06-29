@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
+    "autocannon": "^8.0.0",
     "eslint": "^9.35.0",
     "jest": "^30.4.2"
   }

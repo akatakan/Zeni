@@ -1,13 +1,15 @@
 jest.mock('axios');
 const axios = require('axios');
 
-// Set before the module loads so RIOT_API_KEY is captured correctly
 process.env.RIOT_API_KEY = 'test-api-key';
 const riotApi = require('../services/riot');
 
 beforeEach(() => {
     axios.mockReset();
-    riotApi.rateLimits.clear();
+    // Seri queue'yu her test için temiz başlat
+    riotApi._lastDispatch = 0;
+    riotApi._queue = Promise.resolve();
+    jest.restoreAllMocks();
 });
 
 function respond(data, status = 200, headers = {}) {
@@ -95,54 +97,63 @@ describe('request', () => {
         await riotApi.request({ baseURL: 'https://x', url: '/t' });
         expect(riotApi.delay).toHaveBeenCalledWith(1000);
     });
-
-    test('stores rate limit headers after a successful request', async () => {
-        respond({}, 200, {
-            'x-method-rate-limit': '20:1,100:120',
-            'x-method-rate-limit-count': '1:1,1:120',
-        });
-        await riotApi.request({ baseURL: 'https://x', url: '/ep' });
-        expect(riotApi.rateLimits.has('/ep')).toBe(true);
-        expect(riotApi.rateLimits.get('/ep').limits).toEqual([[20, 1], [100, 120]]);
-    });
-
-    test('does not store rate limit data when headers are missing', async () => {
-        respond({});
-        await riotApi.request({ baseURL: 'https://x', url: '/no-headers' });
-        expect(riotApi.rateLimits.has('/no-headers')).toBe(false);
-    });
 });
 
-// ─── waitIfRateLimited ────────────────────────────────────────────────────────
+// ─── queue (seri istek kuyruğu) ───────────────────────────────────────────────
 
-describe('waitIfRateLimited', () => {
-    test('waits when count equals the limit', async () => {
-        jest.spyOn(riotApi, 'delay').mockResolvedValue();
-        riotApi.rateLimits.set('/capped', {
-            limits: [[5, 1]],
-            counts: [[null, 5]],  // count === limit
-        });
+describe('queue', () => {
+    test('_lastDispatch is updated after a successful request', async () => {
         respond({});
-        await riotApi.request({ baseURL: 'https://x', url: '/capped' });
-        expect(riotApi.delay).toHaveBeenCalledWith(1000); // window=1 → 1000ms
+        const before = Date.now();
+        await riotApi.request({ baseURL: 'https://x', url: '/test' });
+        expect(riotApi._lastDispatch).toBeGreaterThanOrEqual(before);
     });
 
-    test('does not wait when count is below the limit', async () => {
+    test('calls delay when last dispatch was within MIN_INTERVAL', async () => {
         jest.spyOn(riotApi, 'delay').mockResolvedValue();
-        riotApi.rateLimits.set('/ok', {
-            limits: [[20, 1]],
-            counts: [[null, 10]], // count < limit
-        });
+        riotApi._lastDispatch = Date.now(); // sanki az önce bir istek gönderildi
         respond({});
-        await riotApi.request({ baseURL: 'https://x', url: '/ok' });
+        await riotApi.request({ baseURL: 'https://x', url: '/test' });
+
+        // delay en az bir kez pozitif bir değerle çağrılmış olmalı (MIN_INTERVAL gap)
+        const gapCall = riotApi.delay.mock.calls.find(([ms]) => ms > 0);
+        expect(gapCall).toBeDefined();
+        expect(gapCall[0]).toBeLessThanOrEqual(riotApi.MIN_INTERVAL);
+    });
+
+    test('skips delay when last dispatch was long ago', async () => {
+        jest.spyOn(riotApi, 'delay').mockResolvedValue();
+        riotApi._lastDispatch = 0; // çok eski → gap negatif → bekleme yok
+        respond({});
+        await riotApi.request({ baseURL: 'https://x', url: '/test' });
         expect(riotApi.delay).not.toHaveBeenCalled();
     });
 
-    test('skips check when no rate limit data is recorded for the URL', async () => {
-        jest.spyOn(riotApi, 'delay').mockResolvedValue();
-        respond({});
-        await riotApi.request({ baseURL: 'https://x', url: '/fresh' });
-        expect(riotApi.delay).not.toHaveBeenCalled();
+    test('serializes concurrent requests — second starts after first finishes', async () => {
+        const order = [];
+        axios
+            .mockImplementationOnce(async () => {
+                order.push('req1-start');
+                await Promise.resolve(); // microtask yield
+                order.push('req1-end');
+                return { status: 200, data: 'a', headers: {} };
+            })
+            .mockImplementationOnce(async () => {
+                order.push('req2-start');
+                return { status: 200, data: 'b', headers: {} };
+            });
+
+        jest.spyOn(riotApi, 'delay').mockResolvedValue(); // MIN_INTERVAL beklemesini atla
+
+        await Promise.all([
+            riotApi.request({ baseURL: 'https://x', url: '/r1' }),
+            riotApi.request({ baseURL: 'https://x', url: '/r2' }),
+        ]);
+
+        // İkinci istek, birincinin bitişinden sonra başlamış olmalı
+        const r1End = order.indexOf('req1-end');
+        const r2Start = order.indexOf('req2-start');
+        expect(r1End).toBeLessThan(r2Start);
     });
 });
 

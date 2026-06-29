@@ -125,7 +125,7 @@ module.exports = {
             };
 
             const embed = new EmbedBuilder()
-                .setAuthor({ name: t('common.bot_name') })
+                .setAuthor({ name: t('common.bot_name'), iconURL: interaction.client.user.displayAvatarURL() })
                 .setTitle(t('bet.embed.title'))
                 .setDescription(`**${summonerName}#${tagline}** ${isBlue ? t('bet.embed.blue_side') : t('bet.embed.red_side')}`)
                 .setColor(COLORS.INFO)

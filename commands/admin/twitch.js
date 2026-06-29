@@ -108,6 +108,7 @@ module.exports = {
             ).join('\n');
 
             const embed = new EmbedBuilder()
+                .setAuthor({ name: t('common.bot_name'), iconURL: interaction.client.user.displayAvatarURL() })
                 .setTitle(t('twitch.embed.list_title'))
                 .setDescription(rows)
                 .setColor(COLORS.SYSTEM)

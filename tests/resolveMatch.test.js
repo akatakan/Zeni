@@ -1,5 +1,6 @@
 jest.mock('discord.js', () => ({
     EmbedBuilder: jest.fn(() => ({
+        setAuthor: jest.fn().mockReturnThis(),
         setTitle: jest.fn().mockReturnThis(),
         setDescription: jest.fn().mockReturnThis(),
         setColor: jest.fn().mockReturnThis(),

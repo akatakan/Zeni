@@ -67,7 +67,7 @@ module.exports = {
             }
 
             const ok = await userRepository.deductBalance(interaction.user.id, tournament.entry_fee);
-            if (!ok) {
+            if (ok === null) {
                 return interaction.reply({
                     content: t('tournament.insufficient_balance', { fee: tournament.entry_fee, balance: user.balance }),
                     flags: MessageFlags.Ephemeral,
@@ -99,6 +99,7 @@ module.exports = {
             }).join('\n');
 
             const embed = new EmbedBuilder()
+                .setAuthor({ name: t('common.bot_name'), iconURL: interaction.client.user.displayAvatarURL() })
                 .setTitle(t('tournament.embed.title'))
                 .setDescription(rows)
                 .setColor(COLORS.INFO)
@@ -144,6 +145,7 @@ module.exports = {
             }
 
             const embed = new EmbedBuilder()
+                .setAuthor({ name: t('common.bot_name'), iconURL: interaction.client.user.displayAvatarURL() })
                 .setTitle(t('tournament.embed.ended_title'))
                 .setDescription(prizeParts.join('\n'))
                 .setColor(COLORS.SUCCESS)

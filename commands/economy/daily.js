@@ -19,6 +19,7 @@ module.exports = {
 
         if (!await userRepository.canClaimDaily(userId)) {
             const embed = new EmbedBuilder()
+                .setAuthor({ name: t('common.bot_name'), iconURL: interaction.client.user.displayAvatarURL() })
                 .setTitle(t('daily.already_claimed.title'))
                 .setDescription(t('daily.already_claimed.description'))
                 .setColor(COLORS.ERROR)
@@ -31,6 +32,7 @@ module.exports = {
         const newBalance = await userRepository.getUserBalance(userId);
 
         const embed = new EmbedBuilder()
+            .setAuthor({ name: t('common.bot_name'), iconURL: interaction.client.user.displayAvatarURL() })
             .setTitle(t('daily.claimed.title'))
             .setDescription(t('daily.claimed.description', { amount: dailyAmount }))
             .addFields({ name: t('daily.claimed.balance_field'), value: `${newBalance} JP`, inline: true })

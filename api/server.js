@@ -1,6 +1,6 @@
 const express = require('express');
 const { getGuildByApiKey, getGuildByLicenseKey, activatePremium, deactivatePremium } = require('../db/guildRepository');
-const { getUserById, getUserBalance, addUserBalance, deductBalance } = require('../db/userRepository');
+const { getUserById, deductBalance } = require('../db/userRepository');
 const { sendWebhook } = require('../services/webhookEmitter');
 const { verifyWebhookSignature } = require('../services/lemonsqueezy');
 const { verifyEventSubSignature } = require('../services/twitch');
@@ -28,8 +28,11 @@ function rateLimit(windowMs, max) {
     };
 }
 
-const apiLimiter = rateLimit(60 * 1000, 60);       // 60 istek/dakika
-const deductLimiter = rateLimit(60 * 1000, 10);    // deduct için daha katı
+const apiLimiter = rateLimit(60 * 1000, 60);
+const deductLimiter = rateLimit(60 * 1000, 10);
+
+const AUTH_CACHE_TTL = 60_000;
+const authCache = new Map(); // apiKey → { guild, cachedAt }
 
 // LemonSqueezy webhook raw body için önce bu endpoint'i tanımla
 app.post('/api/lemonsqueezy/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
@@ -67,8 +70,17 @@ async function authenticate(req, res, next) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
     const apiKey = auth.slice(7);
+
+    const cached = authCache.get(apiKey);
+    if (cached && Date.now() - cached.cachedAt < AUTH_CACHE_TTL) {
+        req.guild = cached.guild;
+        return next();
+    }
+
     const guild = await getGuildByApiKey(apiKey);
     if (!guild) return res.status(401).json({ error: 'Invalid API key' });
+
+    authCache.set(apiKey, { guild, cachedAt: Date.now() });
     req.guild = guild;
     next();
 }
@@ -89,18 +101,14 @@ app.post('/api/balance/deduct', deductLimiter, authenticate, async (req, res) =>
         return res.status(400).json({ error: 'user_id ve pozitif amount gerekli' });
     }
 
-    const user = await getUserById(user_id);
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    // Atomik deduct — race condition yok
-    const ok = await deductBalance(user_id, amount);
-    if (!ok) {
-        return res.status(400).json({ error: 'Yetersiz bakiye', balance: user.balance });
+    // Atomik deduct — başarısızsa (kullanıcı yok veya bakiye yetersiz) null döner
+    const newBalance = await deductBalance(user_id, amount);
+    if (newBalance === null) {
+        return res.status(400).json({ error: 'Yetersiz bakiye veya kullanıcı bulunamadı' });
     }
-    const newBalance = await getUserBalance(user_id);
 
     if (req.guild.webhook_url) {
-        await sendWebhook(req.guild.webhook_url, req.guild.webhook_secret, {
+        sendWebhook(req.guild.webhook_url, req.guild.webhook_secret, {
             event: 'balance.deducted',
             guild_id: req.guild.guild_id,
             user_id,
@@ -108,7 +116,7 @@ app.post('/api/balance/deduct', deductLimiter, authenticate, async (req, res) =>
             new_balance: newBalance,
             reason: reason || null,
             timestamp: new Date().toISOString(),
-        });
+        }).catch(err => logger.error('Webhook gönderilemedi', { error: err.message }));
     }
 
     res.json({ success: true, user_id, amount, new_balance: newBalance });
@@ -183,7 +191,7 @@ async function handleStreamOnline(tracking, client) {
     await betRepository.createMatchBet(matchId, 'TWITCH_AUTO', matchStartedAt, summoner.puuid, tracking.region, tracking.discord_channel_id);
 
     const embed = new EmbedBuilder()
-        .setAuthor({ name: '🔴 Zeni — Twitch Otomatik Bahis' })
+        .setAuthor({ name: '🔴 Zeni — Twitch Otomatik Bahis', iconURL: _discordClient?.user?.displayAvatarURL() })
         .setTitle(`${tracking.twitch_channel_name} CANLI!`)
         .setDescription(`**${tracking.summoner_name}#${tracking.tagline}** ${isBlue ? '(Mavi Takım)' : '(Kırmızı Takım)'}`)
         .setColor(COLORS.INFO)

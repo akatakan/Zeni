@@ -257,7 +257,7 @@ async function handleModal(interaction) {
         }
 
         const deducted = await userRepository.deductBalance(interaction.user.id, betAmount);
-        if (!deducted) {
+        if (deducted === null) {
             return interaction.reply({ content: t('modal.insufficient_balance', { balance: user.balance }), flags: MessageFlags.Ephemeral });
         }
 
@@ -352,7 +352,7 @@ async function handleModal(interaction) {
         }
     } else {
         deducted = await userRepository.deductBalance(interaction.user.id, betAmount);
-        if (!deducted) {
+        if (deducted === null) {
             return interaction.reply({ content: t('modal.insufficient_balance', { balance: user.balance }), flags: MessageFlags.Ephemeral });
         }
     }
@@ -391,7 +391,7 @@ async function handleModal(interaction) {
         if (sourceEmbed) {
             const matchFields = sourceEmbed.fields.slice(0, 5);
             const embed = new EmbedBuilder()
-                .setAuthor({ name: t('common.bot_name') })
+                .setAuthor({ name: t('common.bot_name'), iconURL: interaction.client.user.displayAvatarURL() })
                 .setTitle(t('modal.embed.title'))
                 .setColor(0xFFD700)
                 .setDescription(sourceEmbed.description)
@@ -429,7 +429,7 @@ async function triggerCopyBets(client, matchId, userId, amount, prediction, minB
         }
 
         const ok = await userRepository.deductBalance(follow.follower_id, follow.amount);
-        if (!ok) continue;
+        if (ok === null) continue;
 
         try {
             await betRepository.addBet(matchId, follow.follower_id, follow.amount, prediction, null);

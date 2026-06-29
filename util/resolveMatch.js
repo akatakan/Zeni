@@ -198,6 +198,7 @@ async function resolveMatch(matchId, summoner, region, client) {
         : t('resolve.embed.no_winners');
 
     return new EmbedBuilder()
+        .setAuthor({ name: t('common.bot_name'), iconURL: client?.user?.displayAvatarURL() })
         .setTitle(t('resolve.embed.title'))
         .setDescription(t(matchResult === 'win' ? 'resolve.embed.result_win' : 'resolve.embed.result_lose'))
         .setColor(winners.length > 0 ? COLORS.SUCCESS : COLORS.ERROR)

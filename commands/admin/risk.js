@@ -76,6 +76,7 @@ module.exports = {
             });
 
             const embed = new EmbedBuilder()
+                .setAuthor({ name: t('common.bot_name'), iconURL: interaction.client.user.displayAvatarURL() })
                 .setTitle(t('risk.embed.title'))
                 .setDescription(rows.join('\n'))
                 .setColor(COLORS.DANGER || 0xFF0000)
@@ -102,6 +103,7 @@ module.exports = {
             });
 
             const embed = new EmbedBuilder()
+                .setAuthor({ name: t('common.bot_name'), iconURL: interaction.client.user.displayAvatarURL() })
                 .setTitle(t('risk.embed.reports_title', { user: target.username }))
                 .setDescription(rows.join('\n'))
                 .setColor(COLORS.WARNING || 0xFFA500)

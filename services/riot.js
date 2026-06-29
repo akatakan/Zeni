@@ -6,58 +6,44 @@ const RIOT_API_KEY = process.env.RIOT_API_KEY;
 class RiotAPI {
     constructor(apiKey) {
         this.apiKey = apiKey;
-        this.rateLimits = new Map();
+        this._queue = Promise.resolve();
+        this._lastDispatch = 0;
+        // 100 req/2min = 0.83 req/s; 1.2s gap → ~50 req/min, burst limitinin de altında
+        this.MIN_INTERVAL = 1200;
     }
 
-    async request({baseURL, url, method = 'GET', params}) {
-        await this.waitIfRateLimited(url);
+    // Tüm Riot isteklerini seri kuyruğa alır; ardışık istekler arası en az MIN_INTERVAL ms bekler.
+    // Chain'in bozulmaması için reject caller'a yansır ama this._queue hep resolved kalır.
+    _enqueue(fn) {
+        const step = this._queue.then(async () => {
+            const gap = this.MIN_INTERVAL - (Date.now() - this._lastDispatch);
+            if (gap > 0) await this.delay(gap);
+            this._lastDispatch = Date.now();
+            return fn();
+        });
+        this._queue = step.catch(() => {});
+        return step;
+    }
 
-        try{
+    async request({ baseURL, url, method = 'GET', params }) {
+        return this._enqueue(() => this._dispatch({ baseURL, url, method, params }));
+    }
+
+    async _dispatch({ baseURL, url, method, params }) {
+        try {
             const response = await axios({
-                method,
-                baseURL,
-                url,
-                params,
-                headers: { 'X-Riot-Token': this.apiKey }
+                method, baseURL, url, params,
+                headers: { 'X-Riot-Token': this.apiKey },
             });
-
-            this.updateRateLimits(url, response.headers);
             return response.status === 204 ? null : response.data;
-        }
-        catch(error){
-            if(error.response && error.response.status === 429){
+        } catch (error) {
+            if (error.response?.status === 429) {
                 const retryAfter = parseInt(error.response.headers['retry-after'] || '1', 10);
-                console.warn(`Rate limit aşıldı. ${retryAfter}s bekleniyor.`);
+                console.warn(`Rate limited. ${retryAfter}s bekleniyor.`);
                 await this.delay(retryAfter * 1000);
-                return this.request({ baseURL, url, method, params });
+                return this._dispatch({ baseURL, url, method, params });
             }
             return null;
-        }
-
-    }
-
-    updateRateLimits(url, headers) {
-        const limitHeader = headers['x-method-rate-limit'];
-        const countHeader = headers['x-method-rate-limit-count'];
-        if (limitHeader && countHeader) {
-            const limits = limitHeader.split(',').map(s => s.split(':').map(Number));
-            const counts = countHeader.split(',').map(s => s.split(':').map(Number));
-            this.rateLimits.set(url, { limits, counts });
-        }
-    }
-
-    async waitIfRateLimited(url) {
-        if (!this.rateLimits.has(url)) return;
-        const { limits, counts } = this.rateLimits.get(url);
-
-        for (let i = 0; i < limits.length; i++) {
-            const [limit, window] = limits[i];
-            const [, count] = counts[i];
-            if (count >= limit) {
-                const waitTime = window * 1000;
-                console.log(`Rate limit yaklaşılıyor (${count}/${limit}), ${waitTime} ms bekleniyor.`);
-                await this.delay(waitTime);
-            }
         }
     }
 
@@ -87,29 +73,29 @@ class RiotAPI {
         console.log(`Fetching account for ${summonerName}#${tagline}`);
         return this.request({
             baseURL: 'https://europe.api.riotgames.com',
-            url: `/riot/account/v1/accounts/by-riot-id/${summonerName}/${tagline}`
+            url: `/riot/account/v1/accounts/by-riot-id/${summonerName}/${tagline}`,
         });
     }
 
     async getActiveGameBySummonerId(region, summonerId) {
         return this.request({
             baseURL: `https://${this.regionToPrefix(region)}.api.riotgames.com`,
-            url: `/lol/spectator/v5/active-games/by-summoner/${summonerId}`
+            url: `/lol/spectator/v5/active-games/by-summoner/${summonerId}`,
         });
     }
 
     async getRankByPuuid(puuid, region) {
         return this.request({
             baseURL: `https://${this.regionToPrefix(region)}.api.riotgames.com`,
-            url: `/lol/league/v4/entries/by-puuid/${puuid}`
+            url: `/lol/league/v4/entries/by-puuid/${puuid}`,
         });
     }
 
     async getMatchesByPuuid(puuid) {
-       return this.request({
+        return this.request({
             baseURL: 'https://europe.api.riotgames.com',
             url: `/lol/match/v5/matches/by-puuid/${puuid}/ids`,
-            params: { count: 1 }
+            params: { count: 1 },
         });
     }
 
@@ -117,7 +103,7 @@ class RiotAPI {
         const cluster = this.regionToCluster(region);
         return this.request({
             baseURL: `https://${cluster}.api.riotgames.com`,
-            url: `/lol/match/v5/matches/${matchId}`
+            url: `/lol/match/v5/matches/${matchId}`,
         });
     }
 

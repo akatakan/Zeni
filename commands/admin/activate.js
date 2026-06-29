@@ -33,6 +33,7 @@ module.exports = {
         await activatePremium(guildId, licenseKey, expiresAt);
 
         const embed = new EmbedBuilder()
+            .setAuthor({ name: t('common.bot_name'), iconURL: interaction.client.user.displayAvatarURL() })
             .setTitle(t('activate.embed.title'))
             .setColor(COLORS.SUCCESS)
             .addFields(

@@ -27,6 +27,7 @@ module.exports = {
         if (sub === 'info') {
             const settings = await createGuildSettings(guildId);
             const embed = new EmbedBuilder()
+                .setAuthor({ name: t('common.bot_name'), iconURL: interaction.client.user.displayAvatarURL() })
                 .setTitle(t('apisetup.embed.title'))
                 .setColor(COLORS.SYSTEM)
                 .addFields(

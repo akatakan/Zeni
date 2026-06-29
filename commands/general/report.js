@@ -24,7 +24,7 @@ module.exports = {
             return interaction.reply({ content: t('report.bot'), flags: MessageFlags.Ephemeral });
         }
 
-        addReport(interaction.guildId, interaction.user.id, target.id, matchId, reason);
+        await addReport(interaction.guildId, interaction.user.id, target.id, matchId, reason);
 
         // Yönetim yetkisine sahip üyelere DM gönder
         try {

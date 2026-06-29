@@ -1,39 +1,45 @@
-const db = require('./db');
+const { pool } = require('./db');
 
-const addTracking = (guildId, channelName, channelId, summonerName, tagline, region, minBet, discordChannelId) => {
-    db.prepare(`
+const addTracking = async (guildId, channelName, channelId, summonerName, tagline, region, minBet, discordChannelId) => {
+    await pool.query(`
         INSERT INTO twitch_tracking
             (guild_id, twitch_channel_name, twitch_channel_id, summoner_name, tagline, region, min_bet, discord_channel_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(guild_id, twitch_channel_name) DO UPDATE SET
-            twitch_channel_id  = excluded.twitch_channel_id,
-            summoner_name      = excluded.summoner_name,
-            tagline            = excluded.tagline,
-            region             = excluded.region,
-            min_bet            = excluded.min_bet,
-            discord_channel_id = excluded.discord_channel_id
-    `).run(guildId, channelName, channelId, summonerName, tagline, region, minBet, discordChannelId);
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+        ON CONFLICT (guild_id, twitch_channel_name) DO UPDATE SET
+            twitch_channel_id  = EXCLUDED.twitch_channel_id,
+            summoner_name      = EXCLUDED.summoner_name,
+            tagline            = EXCLUDED.tagline,
+            region             = EXCLUDED.region,
+            min_bet            = EXCLUDED.min_bet,
+            discord_channel_id = EXCLUDED.discord_channel_id
+    `, [guildId, channelName, channelId, summonerName, tagline, region, minBet, discordChannelId]);
 };
 
-const removeTracking = (guildId, channelName) => {
-    return db.prepare('DELETE FROM twitch_tracking WHERE guild_id = ? AND twitch_channel_name = ?')
-        .run(guildId, channelName).changes > 0;
+const removeTracking = async (guildId, channelName) => {
+    const res = await pool.query(
+        'DELETE FROM twitch_tracking WHERE guild_id = $1 AND twitch_channel_name = $2',
+        [guildId, channelName]
+    );
+    return res.rowCount > 0;
 };
 
-const getTrackingsByGuild = (guildId) => {
-    return db.prepare('SELECT * FROM twitch_tracking WHERE guild_id = ?').all(guildId);
+const getTrackingsByGuild = async (guildId) => {
+    const res = await pool.query('SELECT * FROM twitch_tracking WHERE guild_id = $1', [guildId]);
+    return res.rows;
 };
 
-const getAllTrackings = () => {
-    return db.prepare('SELECT * FROM twitch_tracking').all();
+const getAllTrackings = async () => {
+    const res = await pool.query('SELECT * FROM twitch_tracking');
+    return res.rows;
 };
 
-const getTrackingByChannelId = (channelId) => {
-    return db.prepare('SELECT * FROM twitch_tracking WHERE twitch_channel_id = ?').get(channelId);
+const getTrackingByChannelId = async (channelId) => {
+    const res = await pool.query('SELECT * FROM twitch_tracking WHERE twitch_channel_id = $1', [channelId]);
+    return res.rows[0];
 };
 
-const setEventSubId = (id, eventsubId) => {
-    db.prepare('UPDATE twitch_tracking SET eventsub_id = ? WHERE id = ?').run(eventsubId, id);
+const setEventSubId = async (id, eventsubId) => {
+    await pool.query('UPDATE twitch_tracking SET eventsub_id = $1 WHERE id = $2', [eventsubId, id]);
 };
 
 module.exports = {

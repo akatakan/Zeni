@@ -34,7 +34,7 @@ async function sendDM(client, userId, content) {
 }
 
 async function checkAnomaly(client, channelId, userId) {
-    const stats = betRepository.getStatsByUserId(userId);
+    const stats = await betRepository.getStatsByUserId(userId);
     if (!stats || stats.total_bets < 15) return;
     const winRate = stats.wins / stats.total_bets;
     if (winRate < 0.85) return;
@@ -56,12 +56,12 @@ async function resolveMatch(matchId, summoner, region, client) {
     logger.info('Maç bitti, bahisler işleniyor', { matchId });
     await riotApi.delay(30000);
 
-    const matchBets = betRepository.getBetsByMatchId(matchId);
-    const match     = betRepository.getMatchBetById(matchId);
+    const matchBets = await betRepository.getBetsByMatchId(matchId);
+    const match     = await betRepository.getMatchBetById(matchId);
 
     if (!matchBets || matchBets.length === 0) {
         logger.info('Maça ait bahis bulunamadı', { matchId });
-        betRepository.deleteMatchBets(matchId);
+        await betRepository.deleteMatchBets(matchId);
         return null;
     }
 
@@ -71,13 +71,13 @@ async function resolveMatch(matchId, summoner, region, client) {
         logger.error('Maç sonucu alınamadı, bahisler iade ediliyor', { matchId });
         for (const b of matchBets) {
             if (b.tournament_id) {
-                tournamentRepository.addTournamentBalance(b.tournament_id, b.user_id, b.amount);
+                await tournamentRepository.addTournamentBalance(b.tournament_id, b.user_id, b.amount);
             } else {
-                userRepository.addUserBalance(b.user_id, b.amount);
+                await userRepository.addUserBalance(b.user_id, b.amount);
             }
             await sendDM(client, b.user_id, t('resolve.dm.refund', { matchId, amount: b.amount }));
         }
-        betRepository.deleteMatchBets(matchId);
+        await betRepository.deleteMatchBets(matchId);
         return null;
     }
 
@@ -86,25 +86,25 @@ async function resolveMatch(matchId, summoner, region, client) {
     const mode    = match?.mode || 'classic';
     logger.info('Maç sonuçlandı', { matchId, result: matchResult, mode, winners: winners.length });
 
-    betRepository.markBetResult(matchId, matchResult);
-    betRepository.closeMatchBet(matchId);
+    await betRepository.markBetResult(matchId, matchResult);
+    await betRepository.closeMatchBet(matchId);
 
     // Kazananlara ödeme
     for (const winner of winners) {
         const payout = calcPayout(winner.amount, matchBets, matchResult, mode);
 
         if (winner.tournament_id) {
-            tournamentRepository.addTournamentBalance(winner.tournament_id, winner.user_id, payout);
+            await tournamentRepository.addTournamentBalance(winner.tournament_id, winner.user_id, payout);
             // Eleme kontrolü: eğer turnuvada sadece 1 kişi kaldıysa otomatik bitir
-            const activeCount = tournamentRepository.getActiveParticipantCount(winner.tournament_id);
+            const activeCount = await tournamentRepository.getActiveParticipantCount(winner.tournament_id);
             if (activeCount <= 1) {
                 logger.info('Turnuvada son kişi kaldı, turnuva bitiyor', { tournamentId: winner.tournament_id });
             }
         } else {
-            userRepository.addUserBalance(winner.user_id, payout);
-            const newStreak = userRepository.incrementStreak(winner.user_id);
+            await userRepository.addUserBalance(winner.user_id, payout);
+            const newStreak = await userRepository.incrementStreak(winner.user_id);
             const bonus = getStreakBonus(newStreak);
-            if (bonus > 0) userRepository.addUserBalance(winner.user_id, bonus);
+            if (bonus > 0) await userRepository.addUserBalance(winner.user_id, bonus);
 
             let dmContent = t('resolve.dm.won', { matchId, amount: payout });
             if (bonus > 0) dmContent += t('resolve.dm.streak_bonus', { streak: newStreak, bonus });
@@ -118,22 +118,22 @@ async function resolveMatch(matchId, summoner, region, client) {
     for (const loser of losers) {
         if (loser.tournament_id) {
             // Turnuva bakiyesi zaten deduct edilmişti; 0'a düştü mü kontrol et
-            const participant = tournamentRepository.getParticipant(loser.tournament_id, loser.user_id);
+            const participant = await tournamentRepository.getParticipant(loser.tournament_id, loser.user_id);
             if (participant && participant.tournament_balance <= 0) {
-                tournamentRepository.eliminateParticipant(loser.tournament_id, loser.user_id);
+                await tournamentRepository.eliminateParticipant(loser.tournament_id, loser.user_id);
                 await sendDM(client, loser.user_id, t('tournament.dm.eliminated'));
             }
         } else {
-            userRepository.resetStreak(loser.user_id);
+            await userRepository.resetStreak(loser.user_id);
             await sendDM(client, loser.user_id, t('resolve.dm.lost', { matchId, amount: loser.amount }));
         }
     }
 
     // Side bet çözümü + combo takibi
     if (sideBetResults) {
-        const sideBets = sideBetRepository.getSideBetsByMatch(matchId);
+        const sideBets = await sideBetRepository.getSideBetsByMatch(matchId);
         if (sideBets.length > 0) {
-            sideBetRepository.markSideBetResults(matchId, sideBetResults.firstBlood, sideBetResults.firstTower);
+            await sideBetRepository.markSideBetResults(matchId, sideBetResults.firstBlood, sideBetResults.firstTower);
 
             // Kullanıcı başına combo verisi: { correctCount, totalWagered }
             const comboMap = new Map();
@@ -150,7 +150,7 @@ async function resolveMatch(matchId, summoner, region, client) {
                               (sb.event_type === 'first_tower'  && sb.prediction === sideBetResults.firstTower);
 
                 const payout = isWin ? Math.floor(sb.amount * 2.5) : 0;
-                if (payout > 0) userRepository.addUserBalance(sb.user_id, payout);
+                if (payout > 0) await userRepository.addUserBalance(sb.user_id, payout);
 
                 const eventKey = sb.event_type === 'first_blood' ? 'side_bet.event_blood' : 'side_bet.event_tower';
                 if (isWin) {
@@ -172,7 +172,7 @@ async function resolveMatch(matchId, summoner, region, client) {
                 const bonusPct = correctCount === 3 ? 0.75 : 0.25;
                 const comboBonus = Math.floor(totalWagered * bonusPct);
                 if (comboBonus <= 0) continue;
-                userRepository.addUserBalance(userId, comboBonus);
+                await userRepository.addUserBalance(userId, comboBonus);
                 await sendDM(client, userId, t('side_bet.dm.combo', { count: correctCount, bonus: comboBonus }));
             }
         }

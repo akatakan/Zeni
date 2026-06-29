@@ -136,10 +136,9 @@ class RiotAPI {
         return { firstBlood: firstBloodTeam, firstTower: firstTowerTeam };
     }
 
-    async isMatchEnd(matchId, region) {
-        const match = await this.getMatchById(matchId, region);
-        if (!match) return false;
-        return match.info.gameEndTimestamp != null;
+    async isActiveGame(region, puuid) {
+        const game = await this.getActiveGameBySummonerId(region, puuid);
+        return game !== null;
     }
 
     async getMatchEndResult(matchId, summoner, region) {

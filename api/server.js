@@ -32,7 +32,7 @@ const apiLimiter = rateLimit(60 * 1000, 60);       // 60 istek/dakika
 const deductLimiter = rateLimit(60 * 1000, 10);    // deduct için daha katı
 
 // LemonSqueezy webhook raw body için önce bu endpoint'i tanımla
-app.post('/api/lemonsqueezy/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+app.post('/api/lemonsqueezy/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     const signature = req.headers['x-signature'];
     if (!signature || !verifyWebhookSignature(req.body, signature)) {
         return res.status(401).json({ error: 'Invalid signature' });
@@ -47,13 +47,13 @@ app.post('/api/lemonsqueezy/webhook', express.raw({ type: 'application/json' }),
 
     if (eventName === 'subscription_created' || eventName === 'subscription_updated') {
         const renewsAt = event.data?.attributes?.renews_at || null;
-        const guild = getGuildByLicenseKey(licenseKey);
-        if (guild) activatePremium(guild.guild_id, licenseKey, renewsAt);
+        const guild = await getGuildByLicenseKey(licenseKey);
+        if (guild) await activatePremium(guild.guild_id, licenseKey, renewsAt);
     }
 
     if (eventName === 'subscription_cancelled' || eventName === 'subscription_expired') {
-        const guild = getGuildByLicenseKey(licenseKey);
-        if (guild) deactivatePremium(guild.guild_id);
+        const guild = await getGuildByLicenseKey(licenseKey);
+        if (guild) await deactivatePremium(guild.guild_id);
     }
 
     res.sendStatus(200);
@@ -61,22 +61,22 @@ app.post('/api/lemonsqueezy/webhook', express.raw({ type: 'application/json' }),
 
 app.use(express.json());
 
-function authenticate(req, res, next) {
+async function authenticate(req, res, next) {
     const auth = req.headers['authorization'];
     if (!auth || !auth.startsWith('Bearer ')) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
     const apiKey = auth.slice(7);
-    const guild = getGuildByApiKey(apiKey);
+    const guild = await getGuildByApiKey(apiKey);
     if (!guild) return res.status(401).json({ error: 'Invalid API key' });
     req.guild = guild;
     next();
 }
 
 // GET /api/balance/:userId
-app.get('/api/balance/:userId', apiLimiter, authenticate, (req, res) => {
+app.get('/api/balance/:userId', apiLimiter, authenticate, async (req, res) => {
     const { userId } = req.params;
-    let user = getUserById(userId);
+    let user = await getUserById(userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ user_id: userId, balance: user.balance });
 });
@@ -89,15 +89,15 @@ app.post('/api/balance/deduct', deductLimiter, authenticate, async (req, res) =>
         return res.status(400).json({ error: 'user_id ve pozitif amount gerekli' });
     }
 
-    const user = getUserById(user_id);
+    const user = await getUserById(user_id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     // Atomik deduct — race condition yok
-    const ok = deductBalance(user_id, amount);
+    const ok = await deductBalance(user_id, amount);
     if (!ok) {
         return res.status(400).json({ error: 'Yetersiz bakiye', balance: user.balance });
     }
-    const newBalance = getUserBalance(user_id);
+    const newBalance = await getUserBalance(user_id);
 
     if (req.guild.webhook_url) {
         await sendWebhook(req.guild.webhook_url, req.guild.webhook_secret, {
@@ -132,7 +132,7 @@ app.post('/api/twitch/eventsub', express.raw({ type: 'application/json' }), asyn
         const eventType = body.subscription?.type;
         if (eventType === 'stream.online') {
             const channelId = body.event?.broadcaster_user_id;
-            const tracking  = twitchRepository.getTrackingByChannelId(channelId);
+            const tracking  = await twitchRepository.getTrackingByChannelId(channelId);
             if (tracking && _discordClient) {
                 handleStreamOnline(tracking, _discordClient).catch(err =>
                     logger.error('Twitch stream.online işleme hatası', { error: err.message })
@@ -163,7 +163,7 @@ async function handleStreamOnline(tracking, client) {
     if (!activeGame || activeGame.gameLength > 300) return;
 
     const matchId = `${activeGame.platformId}_${activeGame.gameId}`;
-    const existing = betRepository.getMatchBetById(matchId);
+    const existing = await betRepository.getMatchBetById(matchId);
     if (existing) return; // zaten izleniyor
 
     const channel = await client.channels.fetch(tracking.discord_channel_id);
@@ -180,7 +180,7 @@ async function handleStreamOnline(tracking, client) {
         }).join('\n');
 
     const matchStartedAt = Date.now() - activeGame.gameLength * 1000;
-    betRepository.createMatchBet(matchId, 'TWITCH_AUTO', matchStartedAt, summoner.puuid, tracking.region, tracking.discord_channel_id);
+    await betRepository.createMatchBet(matchId, 'TWITCH_AUTO', matchStartedAt, summoner.puuid, tracking.region, tracking.discord_channel_id);
 
     const embed = new EmbedBuilder()
         .setAuthor({ name: '🔴 Zeni — Twitch Otomatik Bahis' })

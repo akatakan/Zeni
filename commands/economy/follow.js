@@ -25,13 +25,13 @@ module.exports = {
         }
 
         // Takip edilecek kişinin kayıtlı olup olmadığını kontrol et
-        const targetUser = userRepository.getUserById(target.id);
+        const targetUser = await userRepository.getUserById(target.id);
         if (!targetUser) {
             return interaction.reply({ content: t('follow.target_not_found'), flags: MessageFlags.Ephemeral });
         }
 
-        const wasAlready = followRepository.isFollowing(interaction.user.id, target.id);
-        followRepository.follow(interaction.user.id, target.id, amount);
+        const wasAlready = await followRepository.isFollowing(interaction.user.id, target.id);
+        await followRepository.follow(interaction.user.id, target.id, amount);
 
         const msg = wasAlready
             ? t('follow.updated', { user: `<@${target.id}>`, amount })

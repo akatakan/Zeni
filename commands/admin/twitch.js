@@ -68,7 +68,7 @@ module.exports = {
                 return interaction.editReply(t('twitch.api_error'));
             }
 
-            twitchRepository.addTracking(
+            await twitchRepository.addTracking(
                 interaction.guildId, channelName, channelId,
                 summonerName, tagline, region, minBet, discordChannel.id,
             );
@@ -77,8 +77,8 @@ module.exports = {
             try {
                 const eventsubId = await twitchService.subscribeToStreamOnline(channelId);
                 if (eventsubId) {
-                    const tracking = twitchRepository.getTrackingByChannelId(channelId);
-                    if (tracking) twitchRepository.setEventSubId(tracking.id, eventsubId);
+                    const tracking = await twitchRepository.getTrackingByChannelId(channelId);
+                    if (tracking) await twitchRepository.setEventSubId(tracking.id, eventsubId);
                 }
             } catch (err) {
                 logger.warn('EventSub subscribe başarısız', { channelName, error: err.message });
@@ -89,7 +89,7 @@ module.exports = {
 
         if (sub === 'untrack') {
             const channelName = interaction.options.getString('kanal').toLowerCase();
-            const removed = twitchRepository.removeTracking(interaction.guildId, channelName);
+            const removed = await twitchRepository.removeTracking(interaction.guildId, channelName);
 
             if (!removed) {
                 return interaction.reply({ content: t('twitch.not_found', { channel: channelName }), flags: MessageFlags.Ephemeral });
@@ -98,7 +98,7 @@ module.exports = {
         }
 
         if (sub === 'list') {
-            const trackings = twitchRepository.getTrackingsByGuild(interaction.guildId);
+            const trackings = await twitchRepository.getTrackingsByGuild(interaction.guildId);
             if (trackings.length === 0) {
                 return interaction.reply({ content: t('twitch.list_empty'), flags: MessageFlags.Ephemeral });
             }

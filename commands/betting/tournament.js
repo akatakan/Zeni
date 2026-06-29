@@ -36,14 +36,14 @@ module.exports = {
                 return interaction.reply({ content: t('tournament.no_permission'), flags: MessageFlags.Ephemeral });
             }
 
-            const existing = tournamentRepository.getActiveTournament(interaction.guildId);
+            const existing = await tournamentRepository.getActiveTournament(interaction.guildId);
             if (existing) {
                 return interaction.reply({ content: t('tournament.already_active'), flags: MessageFlags.Ephemeral });
             }
 
             const entryFee     = interaction.options.getInteger('giris_ucreti') ?? 500;
             const durationDays = interaction.options.getInteger('sure') ?? 7;
-            tournamentRepository.createTournament(interaction.guildId, entryFee, durationDays);
+            await tournamentRepository.createTournament(interaction.guildId, entryFee, durationDays);
 
             return interaction.reply({
                 content: t('tournament.started', { fee: entryFee, days: durationDays }),
@@ -52,21 +52,21 @@ module.exports = {
         }
 
         if (sub === 'join') {
-            const tournament = tournamentRepository.getActiveTournament(interaction.guildId);
+            const tournament = await tournamentRepository.getActiveTournament(interaction.guildId);
             if (!tournament) {
                 return interaction.reply({ content: t('tournament.no_active'), flags: MessageFlags.Ephemeral });
             }
-            if (tournamentRepository.hasJoined(tournament.tournament_id, interaction.user.id)) {
+            if (await tournamentRepository.hasJoined(tournament.tournament_id, interaction.user.id)) {
                 return interaction.reply({ content: t('tournament.already_joined'), flags: MessageFlags.Ephemeral });
             }
 
-            let user = userRepository.getUserById(interaction.user.id);
+            let user = await userRepository.getUserById(interaction.user.id);
             if (!user) {
-                userRepository.addUser(interaction.user.id, interaction.user.username);
-                user = userRepository.getUserById(interaction.user.id);
+                await userRepository.addUser(interaction.user.id, interaction.user.username);
+                user = await userRepository.getUserById(interaction.user.id);
             }
 
-            const ok = userRepository.deductBalance(interaction.user.id, tournament.entry_fee);
+            const ok = await userRepository.deductBalance(interaction.user.id, tournament.entry_fee);
             if (!ok) {
                 return interaction.reply({
                     content: t('tournament.insufficient_balance', { fee: tournament.entry_fee, balance: user.balance }),
@@ -74,7 +74,7 @@ module.exports = {
                 });
             }
 
-            tournamentRepository.joinTournament(tournament.tournament_id, interaction.user.id, tournament.entry_fee);
+            await tournamentRepository.joinTournament(tournament.tournament_id, interaction.user.id, tournament.entry_fee);
             return interaction.reply({
                 content: t('tournament.joined', { fee: tournament.entry_fee, start: tournament.entry_fee * 3 }),
                 flags: MessageFlags.Ephemeral,
@@ -82,12 +82,12 @@ module.exports = {
         }
 
         if (sub === 'status') {
-            const tournament = tournamentRepository.getActiveTournament(interaction.guildId);
+            const tournament = await tournamentRepository.getActiveTournament(interaction.guildId);
             if (!tournament) {
                 return interaction.reply({ content: t('tournament.no_active'), flags: MessageFlags.Ephemeral });
             }
 
-            const participants = tournamentRepository.getLeaderboard(tournament.tournament_id);
+            const participants = await tournamentRepository.getLeaderboard(tournament.tournament_id);
             if (participants.length === 0) {
                 return interaction.reply({ content: t('tournament.no_participants'), flags: MessageFlags.Ephemeral });
             }
@@ -117,15 +117,15 @@ module.exports = {
                 return interaction.reply({ content: t('tournament.no_permission'), flags: MessageFlags.Ephemeral });
             }
 
-            const tournament = tournamentRepository.getActiveTournament(interaction.guildId);
+            const tournament = await tournamentRepository.getActiveTournament(interaction.guildId);
             if (!tournament) {
                 return interaction.reply({ content: t('tournament.no_active'), flags: MessageFlags.Ephemeral });
             }
 
-            const participants = tournamentRepository.getLeaderboard(tournament.tournament_id)
+            const participants = (await tournamentRepository.getLeaderboard(tournament.tournament_id))
                 .filter(p => !p.eliminated);
 
-            tournamentRepository.endTournament(tournament.tournament_id);
+            await tournamentRepository.endTournament(tournament.tournament_id);
 
             if (participants.length === 0) {
                 return interaction.reply({ content: t('tournament.ended_no_winners') });
@@ -138,7 +138,7 @@ module.exports = {
             for (let i = 0; i < winners.length; i++) {
                 const prize = Math.floor(tournament.prize_pool * (PRIZE_SHARES[i] || 0));
                 if (prize > 0) {
-                    userRepository.addUserBalance(winners[i].user_id, prize);
+                    await userRepository.addUserBalance(winners[i].user_id, prize);
                     prizeParts.push(`${i + 1}. <@${winners[i].user_id}>: +**${prize} JP**`);
                 }
             }

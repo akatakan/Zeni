@@ -12,12 +12,12 @@ module.exports = {
         const t = useT(interaction);
         const userId = interaction.user.id;
 
-        let user = userRepository.getUserById(userId);
+        let user = await userRepository.getUserById(userId);
         if (!user) {
-            userRepository.addUser(userId, interaction.user.username);
+            await userRepository.addUser(userId, interaction.user.username);
         }
 
-        if (!userRepository.canClaimDaily(userId)) {
+        if (!await userRepository.canClaimDaily(userId)) {
             const embed = new EmbedBuilder()
                 .setTitle(t('daily.already_claimed.title'))
                 .setDescription(t('daily.already_claimed.description'))
@@ -27,8 +27,8 @@ module.exports = {
         }
 
         const dailyAmount = 200;
-        userRepository.claimDailyBalance(userId, dailyAmount);
-        const newBalance = userRepository.getUserBalance(userId);
+        await userRepository.claimDailyBalance(userId, dailyAmount);
+        const newBalance = await userRepository.getUserBalance(userId);
 
         const embed = new EmbedBuilder()
             .setTitle(t('daily.claimed.title'))

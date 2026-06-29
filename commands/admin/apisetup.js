@@ -25,7 +25,7 @@ module.exports = {
         const guildId = interaction.guildId;
 
         if (sub === 'info') {
-            const settings = createGuildSettings(guildId);
+            const settings = await createGuildSettings(guildId);
             const embed = new EmbedBuilder()
                 .setTitle(t('apisetup.embed.title'))
                 .setColor(COLORS.SYSTEM)
@@ -55,8 +55,8 @@ module.exports = {
                 return interaction.reply({ content: t('apisetup.invalid_url'), flags: MessageFlags.Ephemeral });
             }
 
-            createGuildSettings(guildId);
-            setWebhookUrl(guildId, url);
+            await createGuildSettings(guildId);
+            await setWebhookUrl(guildId, url);
             await interaction.reply({ content: t('apisetup.webhook_set', { url }), flags: MessageFlags.Ephemeral });
         }
     }

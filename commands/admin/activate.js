@@ -30,7 +30,7 @@ module.exports = {
         }
 
         const expiresAt = result.license_key?.expires_at || null;
-        activatePremium(guildId, licenseKey, expiresAt);
+        await activatePremium(guildId, licenseKey, expiresAt);
 
         const embed = new EmbedBuilder()
             .setTitle(t('activate.embed.title'))

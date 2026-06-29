@@ -18,17 +18,17 @@ module.exports = {
         const t = useT(interaction);
         const target = interaction.options.getUser('kullanici') || interaction.user;
 
-        const user = userRepository.getUserById(target.id);
+        const user = await userRepository.getUserById(target.id);
         if (!user) {
             return interaction.reply({ content: t('stats.not_found'), flags: MessageFlags.Ephemeral });
         }
 
-        const stats = betRepository.getStatsByUserId(target.id);
+        const stats = await betRepository.getStatsByUserId(target.id);
         if (!stats || stats.total_bets === 0) {
             return interaction.reply({ content: t('stats.no_bets'), flags: MessageFlags.Ephemeral });
         }
 
-        const sideStats = getSideBetStatsByUserId(target.id);
+        const sideStats = await getSideBetStatsByUserId(target.id);
 
         const wr          = Math.round(stats.wins / stats.total_bets * 100);
         const netSign     = stats.net_jp >= 0 ? '+' : '';

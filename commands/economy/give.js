@@ -26,12 +26,12 @@ module.exports = {
         }
 
         // Alıcı yoksa oluştur
-        if (!userRepository.getUserById(target.id)) {
-            userRepository.addUser(target.id, target.username);
+        if (!await userRepository.getUserById(target.id)) {
+            await userRepository.addUser(target.id, target.username);
         }
 
         // Atomik transfer — race condition'sız
-        const success = userRepository.transferBalance(interaction.user.id, target.id, amount);
+        const success = await userRepository.transferBalance(interaction.user.id, target.id, amount);
         if (!success) {
             return interaction.reply({ content: t('give.insufficient_balance'), flags: MessageFlags.Ephemeral });
         }

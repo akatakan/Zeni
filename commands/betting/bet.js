@@ -11,6 +11,7 @@ const { isPremium } = require('../../db/guildRepository');
 
 const FREE_DAILY_LIMIT = 3;
 const FREE_SIMULTANEOUS_LIMIT = 1;
+const GLOBAL_OPEN_MATCH_LIMIT = 20;
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -59,13 +60,18 @@ module.exports = {
 
         await interaction.deferReply();
 
+        // Global API kapasitesi limiti (herkese uygulanır)
+        if (await betRepository.getOpenMatchCount() >= GLOBAL_OPEN_MATCH_LIMIT) {
+            return interaction.editReply({ content: t('bet.global_limit'), flags: MessageFlags.Ephemeral });
+        }
+
         // Freemium limit kontrolü (premium sunucular geçer)
-        if (!isPremium(interaction.guildId)) {
-            const dailyCount = betRepository.getDailyMatchCount(interaction.user.id);
+        if (!await isPremium(interaction.guildId)) {
+            const dailyCount = await betRepository.getDailyMatchCount(interaction.user.id);
             if (dailyCount >= FREE_DAILY_LIMIT) {
                 return interaction.editReply({ content: t('bet.daily_limit', { max: FREE_DAILY_LIMIT }), flags: MessageFlags.Ephemeral });
             }
-            const openCount = betRepository.getOpenMatchCountByCreator(interaction.user.id);
+            const openCount = await betRepository.getOpenMatchCountByCreator(interaction.user.id);
             if (openCount >= FREE_SIMULTANEOUS_LIMIT) {
                 return interaction.editReply({ content: t('bet.simultaneous_limit', { max: FREE_SIMULTANEOUS_LIMIT }), flags: MessageFlags.Ephemeral });
             }
@@ -134,15 +140,15 @@ module.exports = {
                 )
                 .setTimestamp();
 
-            let user = userRepository.getUserById(interaction.user.id);
+            let user = await userRepository.getUserById(interaction.user.id);
             if (!user) {
-                userRepository.addUser(interaction.user.id, interaction.user.username);
+                await userRepository.addUser(interaction.user.id, interaction.user.username);
             }
 
             const matchId = `${activeGame.platformId}_${activeGame.gameId}`;
             // gameLength = maçın kaç saniyedir devam ettiği; gerçek başlangıç timestamp'i hesaplanır
             const matchStartedAt = Date.now() - activeGame.gameLength * 1000;
-            betRepository.createMatchBet(matchId, interaction.user.id, matchStartedAt, summoner.puuid, region, interaction.channelId, betMode);
+            await betRepository.createMatchBet(matchId, interaction.user.id, matchStartedAt, summoner.puuid, region, interaction.channelId, betMode);
 
             const joinBtn = new ButtonBuilder()
                 .setCustomId(`placeBet-${matchId}-${minBetAmount}`)
@@ -156,7 +162,7 @@ module.exports = {
 
             const rows = [new ActionRowBuilder().addComponents(joinBtn, quitBtn)];
 
-            if (isPremium(interaction.guildId)) {
+            if (await isPremium(interaction.guildId)) {
                 const firstBloodBtn = new ButtonBuilder()
                     .setCustomId(`sideBet-${matchId}-${minBetAmount}-first_blood`)
                     .setLabel(t('bet.button.side_first_blood'))
@@ -184,7 +190,7 @@ module.exports = {
 
             try {
                 const resolveWithClient = (mId, s, r) => resolveMatch(mId, s, r, interaction.client);
-                const resultEmbed = await watchMatchEnd(matchId, summoner, region, resolveWithClient);
+                const resultEmbed = await watchMatchEnd(matchId, summoner, region, resolveWithClient, matchStartedAt);
                 interaction.channel.send({ embeds: [resultEmbed] });
             } catch (error) {
                 console.error('Maç izleme hatası:', error);

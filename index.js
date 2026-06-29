@@ -12,6 +12,7 @@ for (const key of REQUIRED_ENV) {
     }
 }
 
+const { initDb } = require('./db/db');
 const { startApiServer } = require('./api/server');
 const token  = process.env.TOKEN;
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
@@ -52,6 +53,7 @@ for (const file of eventFiles) {
 
 
 
-client.login(token).then(() => {
-    startApiServer(process.env.API_PORT || 3000, client);
-});
+initDb()
+    .then(() => client.login(token))
+    .then(() => startApiServer(process.env.API_PORT || 3000, client))
+    .catch(err => { console.error('[HATA] Başlatma hatası:', err); process.exit(1); });

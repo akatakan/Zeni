@@ -2,6 +2,7 @@ const { Events } = require('discord.js');
 const { watchMatchEnd } = require('../util/watchmatch');
 const { resolveMatch } = require('../util/resolveMatch');
 const { loadChampions, scheduleChampionRefresh } = require('../util/championCache');
+const { loadAllLocales } = require('../util/i18n');
 const betRepository = require('../db/betRepository');
 const twitchRepository = require('../db/twitchRepository');
 const twitchService = require('../services/twitch');
@@ -14,6 +15,8 @@ module.exports = {
     async execute(client) {
         logger.info(`Bot hazır: ${client.user.tag}`);
 
+        await loadAllLocales();
+
         try {
             await loadChampions();
         } catch (err) {
@@ -23,13 +26,13 @@ module.exports = {
 
         // Twitch EventSub abonelikleri yenile (env ayarlıysa)
         if (process.env.TWITCH_CLIENT_ID && process.env.TWITCH_CLIENT_SECRET && process.env.PUBLIC_URL) {
-            const trackings = twitchRepository.getAllTrackings();
+            const trackings = await twitchRepository.getAllTrackings();
             twitchService.resubscribeAll(trackings).catch(err =>
                 logger.warn('Twitch resubscribe tamamlanamadı', { error: err.message })
             );
         }
 
-        const openMatches = betRepository.getOpenMatches();
+        const openMatches = await betRepository.getOpenMatches();
         if (openMatches.length === 0) return;
 
         logger.info(`${openMatches.length} açık maç bulundu, izleme devam ettiriliyor`);
@@ -37,7 +40,7 @@ module.exports = {
         for (const match of openMatches) {
             const summoner = { puuid: match.summoner_id };
             const resolveWithClient = (mId, s, r) => resolveMatch(mId, s, r, client);
-            watchMatchEnd(match.match_id, summoner, match.region, resolveWithClient)
+            watchMatchEnd(match.match_id, summoner, match.region, resolveWithClient, match.started_at)
                 .then(async (embed) => {
                     if (!embed || !match.channel_id) return;
                     try {

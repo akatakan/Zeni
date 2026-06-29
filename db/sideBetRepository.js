@@ -1,36 +1,40 @@
-const db = require('./db');
+const { pool } = require('./db');
 
-const addSideBet = (matchId, userId, eventType, prediction, amount) => {
-    return db.prepare(`
-        INSERT INTO side_bets (match_id, user_id, event_type, prediction, amount, placed_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-    `).run(matchId, userId, eventType, prediction, amount, Date.now());
+const addSideBet = async (matchId, userId, eventType, prediction, amount) => {
+    await pool.query(
+        'INSERT INTO side_bets (match_id, user_id, event_type, prediction, amount, placed_at) VALUES ($1,$2,$3,$4,$5,$6)',
+        [matchId, userId, eventType, prediction, amount, Date.now()]
+    );
 };
 
-const hasSideBet = (matchId, userId, eventType) => {
-    const row = db.prepare('SELECT 1 FROM side_bets WHERE match_id = ? AND user_id = ? AND event_type = ?').get(matchId, userId, eventType);
-    return !!row;
+const hasSideBet = async (matchId, userId, eventType) => {
+    const res = await pool.query(
+        'SELECT 1 FROM side_bets WHERE match_id = $1 AND user_id = $2 AND event_type = $3',
+        [matchId, userId, eventType]
+    );
+    return res.rows.length > 0;
 };
 
-const getSideBetsByMatch = (matchId) => {
-    return db.prepare('SELECT * FROM side_bets WHERE match_id = ?').all(matchId);
+const getSideBetsByMatch = async (matchId) => {
+    const res = await pool.query('SELECT * FROM side_bets WHERE match_id = $1', [matchId]);
+    return res.rows;
 };
 
-const markSideBetResults = (matchId, firstBloodTeam, firstTowerTeam) => {
-    db.prepare(`
+const markSideBetResults = async (matchId, firstBloodTeam, firstTowerTeam) => {
+    await pool.query(`
         UPDATE side_bets SET won = CASE
-            WHEN event_type = 'first_blood' AND prediction = ? THEN 1
-            WHEN event_type = 'first_blood' AND prediction != ? THEN 0
-            WHEN event_type = 'first_tower' AND prediction = ? THEN 1
-            WHEN event_type = 'first_tower' AND prediction != ? THEN 0
+            WHEN event_type = 'first_blood' AND prediction = $1 THEN 1
+            WHEN event_type = 'first_blood' AND prediction != $1 THEN 0
+            WHEN event_type = 'first_tower'  AND prediction = $2 THEN 1
+            WHEN event_type = 'first_tower'  AND prediction != $2 THEN 0
             ELSE won
         END
-        WHERE match_id = ?
-    `).run(firstBloodTeam, firstBloodTeam, firstTowerTeam, firstTowerTeam, matchId);
+        WHERE match_id = $3
+    `, [firstBloodTeam, firstTowerTeam, matchId]);
 };
 
-const getSideBetStatsByUserId = (userId) => {
-    return db.prepare(`
+const getSideBetStatsByUserId = async (userId) => {
+    const res = await pool.query(`
         SELECT
             COUNT(*) as total_bets,
             SUM(CASE WHEN won = 1 THEN 1 ELSE 0 END) as wins,
@@ -38,8 +42,9 @@ const getSideBetStatsByUserId = (userId) => {
             SUM(amount) as total_wagered,
             SUM(CASE WHEN won = 1 THEN amount ELSE -amount END) as net_jp
         FROM side_bets
-        WHERE user_id = ? AND won IS NOT NULL
-    `).get(userId);
+        WHERE user_id = $1 AND won IS NOT NULL
+    `, [userId]);
+    return res.rows[0];
 };
 
 module.exports = { addSideBet, hasSideBet, getSideBetsByMatch, markSideBetResults, getSideBetStatsByUserId };

@@ -13,7 +13,7 @@ module.exports = {
         const t = useT(interaction);
         const target = interaction.options.getUser('kullanici');
 
-        const removed = followRepository.unfollow(interaction.user.id, target.id);
+        const removed = await followRepository.unfollow(interaction.user.id, target.id);
         if (!removed) {
             return interaction.reply({ content: t('follow.not_following', { user: `<@${target.id}>` }), flags: MessageFlags.Ephemeral });
         }

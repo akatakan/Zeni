@@ -1,76 +1,86 @@
-const db = require('./db');
+const { pool } = require('./db');
 
-const createMatchBet = (matchId, creatorId, started_at, summoner_id, region, channel_id, mode = 'classic') => {
-    const stmt = db.prepare('INSERT OR IGNORE INTO matches_bets (match_id, creator_id, started_at, summoner_id, region, channel_id, mode) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    return stmt.run(matchId, creatorId, started_at, summoner_id, region, channel_id, mode);
+const createMatchBet = async (matchId, creatorId, started_at, summoner_id, region, channel_id, mode = 'classic') => {
+    await pool.query(
+        'INSERT INTO matches_bets (match_id, creator_id, started_at, summoner_id, region, channel_id, mode) VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT DO NOTHING',
+        [matchId, creatorId, started_at, summoner_id, region, channel_id, mode]
+    );
 };
 
-const getMatchBetById = (matchId) => {
-    const stmt = db.prepare('SELECT * FROM matches_bets WHERE match_id = ?');
-    return stmt.get(matchId);
+const getMatchBetById = async (matchId) => {
+    const res = await pool.query('SELECT * FROM matches_bets WHERE match_id = $1', [matchId]);
+    return res.rows[0];
 };
 
-const closeMatchBet = (matchId) => {
-    const stmt = db.prepare('UPDATE matches_bets SET is_open = 0, closed_at = CURRENT_TIMESTAMP WHERE match_id = ?');
-    return stmt.run(matchId);
+const closeMatchBet = async (matchId) => {
+    await pool.query('UPDATE matches_bets SET is_open = 0, closed_at = NOW() WHERE match_id = $1', [matchId]);
 };
 
-const deleteMatchBets = (matchId) => {
-    const stmt = db.prepare('DELETE FROM matches_bets WHERE match_id = ?');
-    return stmt.run(matchId);
+const deleteMatchBets = async (matchId) => {
+    await pool.query('DELETE FROM matches_bets WHERE match_id = $1', [matchId]);
 };
 
-const deleteBets = (matchId) => {
-    const stmt = db.prepare('DELETE FROM bets WHERE match_id = ?');
-    return stmt.run(matchId);
+const deleteBets = async (matchId) => {
+    await pool.query('DELETE FROM bets WHERE match_id = $1', [matchId]);
 };
 
-const addBet = (matchId, userId, amount, prediction, tournamentId = null) => {
-    const stmt = db.prepare('INSERT INTO bets (match_id, user_id, amount, prediction, tournament_id) VALUES (?, ?, ?, ?, ?)');
-    return stmt.run(matchId, userId, amount, prediction, tournamentId);
+const addBet = async (matchId, userId, amount, prediction, tournamentId = null) => {
+    await pool.query(
+        'INSERT INTO bets (match_id, user_id, amount, prediction, tournament_id) VALUES ($1,$2,$3,$4,$5)',
+        [matchId, userId, amount, prediction, tournamentId]
+    );
 };
 
-const getBetsByMatchId = (matchId) => {
-    const stmt = db.prepare('SELECT * FROM bets WHERE match_id = ?');
-    return stmt.all(matchId);
+const getBetsByMatchId = async (matchId) => {
+    const res = await pool.query('SELECT * FROM bets WHERE match_id = $1', [matchId]);
+    return res.rows;
 };
 
-const hasActiveBet = (userId, matchId) => {
-    const stmt = db.prepare('SELECT COUNT(*) as count FROM bets WHERE user_id = ? AND match_id = ?');
-    const result = stmt.get(userId, matchId);
-    return result.count > 0;
+const hasActiveBet = async (userId, matchId) => {
+    const res = await pool.query(
+        'SELECT COUNT(*) as count FROM bets WHERE user_id = $1 AND match_id = $2',
+        [userId, matchId]
+    );
+    return parseInt(res.rows[0].count) > 0;
 };
 
-const getOpenMatches = () => {
-    const stmt = db.prepare('SELECT * FROM matches_bets WHERE is_open = 1');
-    return stmt.all();
+const getOpenMatches = async () => {
+    const res = await pool.query('SELECT * FROM matches_bets WHERE is_open = 1');
+    return res.rows;
 };
 
-// Kullanıcının bugün kaç maç açtığı (started_at = Unix ms timestamp)
-const getDailyMatchCount = (userId) => {
+const getOpenMatchCount = async () => {
+    const res = await pool.query('SELECT COUNT(*) as count FROM matches_bets WHERE is_open = 1');
+    return parseInt(res.rows[0].count);
+};
+
+const getDailyMatchCount = async (userId) => {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
-    const stmt = db.prepare('SELECT COUNT(*) as count FROM matches_bets WHERE creator_id = ? AND started_at >= ?');
-    return stmt.get(userId, todayStart.getTime()).count;
+    const res = await pool.query(
+        'SELECT COUNT(*) as count FROM matches_bets WHERE creator_id = $1 AND started_at >= $2',
+        [userId, todayStart.getTime()]
+    );
+    return parseInt(res.rows[0].count);
 };
 
-// Kullanıcının şu an kaç açık maçı var
-const getOpenMatchCountByCreator = (userId) => {
-    const stmt = db.prepare('SELECT COUNT(*) as count FROM matches_bets WHERE creator_id = ? AND is_open = 1');
-    return stmt.get(userId).count;
+const getOpenMatchCountByCreator = async (userId) => {
+    const res = await pool.query(
+        'SELECT COUNT(*) as count FROM matches_bets WHERE creator_id = $1 AND is_open = 1',
+        [userId]
+    );
+    return parseInt(res.rows[0].count);
 };
 
-// Tüm bets'i sonuca göre işaretle (won=1 doğru, won=0 yanlış)
-const markBetResult = (matchId, matchResult) => {
-    db.prepare(`
-        UPDATE bets SET won = CASE WHEN prediction = ? THEN 1 ELSE 0 END
-        WHERE match_id = ?
-    `).run(matchResult, matchId);
+const markBetResult = async (matchId, matchResult) => {
+    await pool.query(
+        'UPDATE bets SET won = CASE WHEN prediction = $1 THEN 1 ELSE 0 END WHERE match_id = $2',
+        [matchResult, matchId]
+    );
 };
 
-// Kullanıcının geçmiş bahis istatistikleri (sadece çözülmüş bahisler)
-const getStatsByUserId = (userId) => {
-    return db.prepare(`
+const getStatsByUserId = async (userId) => {
+    const res = await pool.query(`
         SELECT
             COUNT(*) as total_bets,
             SUM(CASE WHEN won = 1 THEN 1 ELSE 0 END) as wins,
@@ -79,8 +89,9 @@ const getStatsByUserId = (userId) => {
             SUM(CASE WHEN won = 1 THEN amount ELSE -amount END) as net_jp,
             MAX(amount) as biggest_bet
         FROM bets
-        WHERE user_id = ? AND won IS NOT NULL
-    `).get(userId);
+        WHERE user_id = $1 AND won IS NOT NULL
+    `, [userId]);
+    return res.rows[0];
 };
 
 module.exports = {
@@ -93,6 +104,7 @@ module.exports = {
     getBetsByMatchId,
     hasActiveBet,
     getOpenMatches,
+    getOpenMatchCount,
     getDailyMatchCount,
     getOpenMatchCountByCreator,
     markBetResult,

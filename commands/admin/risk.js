@@ -41,7 +41,7 @@ module.exports = {
         if (sub === 'add') {
             const target = interaction.options.getUser('kullanici');
             const reason = interaction.options.getString('sebep') || 'Manuel';
-            flagUser(interaction.guildId, target.id, reason, interaction.user.id);
+            await flagUser(interaction.guildId, target.id, reason, interaction.user.id);
             return interaction.reply({
                 content: t('risk.flagged', { user: `<@${target.id}>` }),
                 flags: MessageFlags.Ephemeral,
@@ -50,13 +50,13 @@ module.exports = {
 
         if (sub === 'remove') {
             const target = interaction.options.getUser('kullanici');
-            if (!isRisky(interaction.guildId, target.id)) {
+            if (!await isRisky(interaction.guildId, target.id)) {
                 return interaction.reply({
                     content: t('risk.not_flagged', { user: `<@${target.id}>` }),
                     flags: MessageFlags.Ephemeral,
                 });
             }
-            unflagUser(interaction.guildId, target.id);
+            await unflagUser(interaction.guildId, target.id);
             return interaction.reply({
                 content: t('risk.unflagged', { user: `<@${target.id}>` }),
                 flags: MessageFlags.Ephemeral,
@@ -64,7 +64,7 @@ module.exports = {
         }
 
         if (sub === 'list') {
-            const riskyUsers = getRiskyUsers(interaction.guildId);
+            const riskyUsers = await getRiskyUsers(interaction.guildId);
             if (riskyUsers.length === 0) {
                 return interaction.reply({ content: t('risk.list_empty'), flags: MessageFlags.Ephemeral });
             }
@@ -86,7 +86,7 @@ module.exports = {
 
         if (sub === 'reports') {
             const target = interaction.options.getUser('kullanici');
-            const reports = getReportsByUser(interaction.guildId, target.id);
+            const reports = await getReportsByUser(interaction.guildId, target.id);
 
             if (reports.length === 0) {
                 return interaction.reply({

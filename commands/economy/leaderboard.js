@@ -12,7 +12,7 @@ module.exports = {
 
     async execute(interaction) {
         const t = useT(interaction);
-        const topUsers = userRepository.getTopUsers(10);
+        const topUsers = await userRepository.getTopUsers(10);
 
         if (topUsers.length === 0) {
             return interaction.reply(t('leaderboard.empty'));

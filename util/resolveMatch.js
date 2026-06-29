@@ -129,24 +129,51 @@ async function resolveMatch(matchId, summoner, region, client) {
         }
     }
 
-    // Side bet çözümü
+    // Side bet çözümü + combo takibi
     if (sideBetResults) {
         const sideBets = sideBetRepository.getSideBetsByMatch(matchId);
         if (sideBets.length > 0) {
             sideBetRepository.markSideBetResults(matchId, sideBetResults.firstBlood, sideBetResults.firstTower);
 
+            // Kullanıcı başına combo verisi: { correctCount, totalWagered }
+            const comboMap = new Map();
+
+            // Main bet kazananlarını combo map'e ekle
+            for (const w of winners) {
+                if (!w.tournament_id) {
+                    comboMap.set(w.user_id, { correctCount: 1, totalWagered: w.amount });
+                }
+            }
+
             for (const sb of sideBets) {
                 const isWin = (sb.event_type === 'first_blood' && sb.prediction === sideBetResults.firstBlood) ||
                               (sb.event_type === 'first_tower'  && sb.prediction === sideBetResults.firstTower);
 
+                const payout = isWin ? Math.floor(sb.amount * 2.5) : 0;
+                if (payout > 0) userRepository.addUserBalance(sb.user_id, payout);
+
+                const eventKey = sb.event_type === 'first_blood' ? 'side_bet.event_blood' : 'side_bet.event_tower';
                 if (isWin) {
-                    const payout = Math.floor(sb.amount * 2.5);
-                    userRepository.addUserBalance(sb.user_id, payout);
-                    const eventKey = sb.event_type === 'first_blood' ? 'side_bet.event_blood' : 'side_bet.event_tower';
                     await sendDM(client, sb.user_id, t('side_bet.dm.won', { event: t(eventKey), amount: payout }));
                 } else {
-                    await sendDM(client, sb.user_id, t('side_bet.dm.lost', { event: t(sb.event_type === 'first_blood' ? 'side_bet.event_blood' : 'side_bet.event_tower'), amount: sb.amount }));
+                    await sendDM(client, sb.user_id, t('side_bet.dm.lost', { event: t(eventKey), amount: sb.amount }));
                 }
+
+                // Combo takibi
+                const entry = comboMap.get(sb.user_id) || { correctCount: 0, totalWagered: 0 };
+                if (isWin) entry.correctCount++;
+                entry.totalWagered += sb.amount;
+                comboMap.set(sb.user_id, entry);
+            }
+
+            // Combo bonusu uygula
+            for (const [userId, { correctCount, totalWagered }] of comboMap) {
+                if (correctCount < 2) continue;
+                const bonusPct = correctCount === 3 ? 0.75 : 0.25;
+                const comboBonus = Math.floor(totalWagered * bonusPct);
+                if (comboBonus <= 0) continue;
+                userRepository.addUserBalance(userId, comboBonus);
+                await sendDM(client, userId, t('side_bet.dm.combo', { count: correctCount, bonus: comboBonus }));
             }
         }
     }

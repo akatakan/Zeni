@@ -214,7 +214,8 @@
     "success": "{{event}} bahsiniz kaydedildi! Tahmin: **{{prediction}}** — {{amount}} JP yatırıldı.",
     "dm": {
       "won": "🎯 {{event}} tahminiz doğru! **+{{amount}} JP** kazandınız.",
-      "lost": "❌ {{event}} tahminiz yanlış çıktı. **{{amount}} JP** kaybedildi."
+      "lost": "❌ {{event}} tahminiz yanlış çıktı. **{{amount}} JP** kaybedildi.",
+      "combo": "🔥 **{{count}}/3 Combo!** Tüm tahminlerin için **+{{bonus}} JP** combo bonusu kazandın!"
     }
   },
   "risk": {

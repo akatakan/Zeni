@@ -5,6 +5,9 @@
     "error": "Bir hata oluştu, lütfen tekrar deneyin."
   },
   "bet": {
+    "select_placeholder": "Tahminini seç",
+    "select_win": "Kazanır",
+    "select_lose": "Kaybeder",
     "fetching": "Maç bilgileri alınıyor, lütfen bekleyin...",
     "daily_limit": "Bugün açabileceğiniz maksimum maç sayısına ({{max}}) ulaştınız. Premium ile sınırsız maç açabilirsiniz.",
     "simultaneous_limit": "Aynı anda yalnızca {{max}} aktif bahis açabilirsiniz. Premium ile bu sınırı kaldırabilirsiniz.",
@@ -211,6 +214,7 @@
     "modal_title_tower": "İlk Kule Bahsi",
     "event_blood": "İlk Kan",
     "event_tower": "İlk Kule",
+    "select_placeholder": "Takımını seç",
     "team_blue": "Mavi Takım",
     "team_red": "Kırmızı Takım",
     "already_bet": "Bu event için zaten bir bahsiniz var.",

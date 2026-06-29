@@ -1,4 +1,4 @@
-const { Events, EmbedBuilder, MessageFlags, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+const { Events, EmbedBuilder, MessageFlags, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
 const { useT } = require('../util/i18n');
 const logger = require('../util/logger');
 const userRepository = require('../db/userRepository');
@@ -12,9 +12,10 @@ const sideBetRepository = require('../db/sideBetRepository');
 module.exports = {
     name: Events.InteractionCreate,
     async execute(interaction) {
-        if (interaction.isChatInputCommand()) return handleCommand(interaction);
-        if (interaction.isButton())          return handleButton(interaction);
-        if (interaction.isModalSubmit())     return handleModal(interaction);
+        if (interaction.isChatInputCommand())  return handleCommand(interaction);
+        if (interaction.isButton())            return handleButton(interaction);
+        if (interaction.isStringSelectMenu())  return handleSelect(interaction);
+        if (interaction.isModalSubmit())       return handleModal(interaction);
     }
 };
 
@@ -80,29 +81,18 @@ async function handleButton(interaction) {
             return interaction.reply({ content: t('button.time_expired'), flags: MessageFlags.Ephemeral });
         }
 
-        const modal = new ModalBuilder()
-            .setCustomId(`betModal-${matchId}-${minBetAmount}`)
-            .setTitle(t('bet.embed.title'));
+        const select = new StringSelectMenuBuilder()
+            .setCustomId(`betSelect-${matchId}-${minBetAmount}`)
+            .setPlaceholder(t('bet.select_placeholder'))
+            .addOptions(
+                new StringSelectMenuOptionBuilder().setLabel(t('bet.select_win')).setValue('win'),
+                new StringSelectMenuOptionBuilder().setLabel(t('bet.select_lose')).setValue('lose'),
+            );
 
-        const betAmountInput = new TextInputBuilder()
-            .setCustomId('betAmountInput')
-            .setLabel(`Bahis Miktarı (Min. ${minBetAmount} JP)`)
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('Bahis miktarınızı girin')
-            .setRequired(true);
-
-        const winPredictionInput = new TextInputBuilder()
-            .setCustomId('winPredictionInput')
-            .setLabel('Tahmin: Win ya da Lose')
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('Win / Lose')
-            .setRequired(true);
-
-        modal.addComponents(
-            new ActionRowBuilder().addComponents(betAmountInput),
-            new ActionRowBuilder().addComponents(winPredictionInput),
-        );
-        await interaction.showModal(modal);
+        await interaction.reply({
+            components: [new ActionRowBuilder().addComponents(select)],
+            flags: MessageFlags.Ephemeral,
+        });
     }
 
     else if (customId.startsWith('sideBet-')) {
@@ -130,30 +120,18 @@ async function handleButton(interaction) {
             return interaction.reply({ content: t('side_bet.already_bet'), flags: MessageFlags.Ephemeral });
         }
 
-        const label = eventType === 'first_blood' ? t('side_bet.modal_title_blood') : t('side_bet.modal_title_tower');
-        const modal = new ModalBuilder()
-            .setCustomId(`sideBetModal-${matchId}-${eventType}`)
-            .setTitle(label);
+        const select = new StringSelectMenuBuilder()
+            .setCustomId(`sideBetSelect-${matchId}-${minBetAmount}-${eventType}`)
+            .setPlaceholder(t('side_bet.select_placeholder'))
+            .addOptions(
+                new StringSelectMenuOptionBuilder().setLabel(t('side_bet.team_blue')).setValue('blue'),
+                new StringSelectMenuOptionBuilder().setLabel(t('side_bet.team_red')).setValue('red'),
+            );
 
-        const amountInput = new TextInputBuilder()
-            .setCustomId('sideBetAmount')
-            .setLabel(`Bahis Miktarı (Min. ${minBetAmount} JP)`)
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('Bahis miktarınızı girin')
-            .setRequired(true);
-
-        const predictionInput = new TextInputBuilder()
-            .setCustomId('sideBetPrediction')
-            .setLabel('Tahmin: Mavi veya Kırmızı')
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('Mavi / Kırmızı')
-            .setRequired(true);
-
-        modal.addComponents(
-            new ActionRowBuilder().addComponents(amountInput),
-            new ActionRowBuilder().addComponents(predictionInput),
-        );
-        await interaction.showModal(modal);
+        await interaction.reply({
+            components: [new ActionRowBuilder().addComponents(select)],
+            flags: MessageFlags.Ephemeral,
+        });
     }
 
     else if (customId.startsWith('quitBet-')) {
@@ -180,6 +158,62 @@ async function handleButton(interaction) {
     }
 }
 
+// ─── Select menu etkileşimleri ───────────────────────────────────────────────
+
+async function handleSelect(interaction) {
+    const t = useT(interaction);
+    const { customId } = interaction;
+    const prediction = interaction.values[0];
+
+    if (customId.startsWith('betSelect-')) {
+        const parts = customId.split('-');
+        if (parts.length !== 3) return interaction.update({ components: [] });
+        const matchId      = parts[1];
+        const minBetAmount = parts[2];
+
+        const modal = new ModalBuilder()
+            .setCustomId(`betModal-${matchId}-${minBetAmount}-${prediction}`)
+            .setTitle(t('bet.embed.title'));
+
+        modal.addComponents(
+            new ActionRowBuilder().addComponents(
+                new TextInputBuilder()
+                    .setCustomId('betAmountInput')
+                    .setLabel(`Bahis Miktarı (Min. ${minBetAmount} JP)`)
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder('Bahis miktarınızı girin')
+                    .setRequired(true),
+            ),
+        );
+        await interaction.showModal(modal);
+    }
+
+    else if (customId.startsWith('sideBetSelect-')) {
+        // sideBetSelect-{matchId}-{minBetAmount}-{eventType}
+        const parts     = customId.split('-');
+        const matchId   = parts[1];
+        const minBetAmount = parts[2];
+        const eventType = parts.slice(3).join('-');
+
+        const title = eventType === 'first_blood' ? t('side_bet.modal_title_blood') : t('side_bet.modal_title_tower');
+        const modal = new ModalBuilder()
+            .setCustomId(`sideBetModal-${matchId}-${eventType}-${prediction}`)
+            .setTitle(title);
+
+        modal.addComponents(
+            new ActionRowBuilder().addComponents(
+                new TextInputBuilder()
+                    .setCustomId('sideBetAmount')
+                    .setLabel(`Bahis Miktarı (Min. ${minBetAmount} JP)`)
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder('Bahis miktarınızı girin')
+                    .setRequired(true),
+            ),
+        );
+        await interaction.showModal(modal);
+    }
+}
+
 // ─── Modal gönderileri ──────────────────────────────────────────────────────
 
 async function handleModal(interaction) {
@@ -187,12 +221,18 @@ async function handleModal(interaction) {
     const { customId } = interaction;
 
     if (customId.startsWith('sideBetModal-')) {
+        // sideBetModal-{matchId}-{eventType}-{prediction}
         const parts = customId.split('-');
-        if (parts.length < 3) {
+        if (parts.length !== 4) {
             return interaction.reply({ content: t('modal.invalid'), flags: MessageFlags.Ephemeral });
         }
         const matchId   = parts[1];
-        const eventType = parts.slice(2).join('-');
+        const eventType = parts[2];
+        const prediction = parts[3];
+
+        if (prediction !== 'blue' && prediction !== 'red') {
+            return interaction.reply({ content: t('modal.invalid'), flags: MessageFlags.Ephemeral });
+        }
 
         const match = betRepository.getMatchBetById(matchId);
         if (!match) {
@@ -202,14 +242,6 @@ async function handleModal(interaction) {
         const betAmount = parseInt(interaction.fields.getTextInputValue('sideBetAmount'), 10);
         if (isNaN(betAmount) || betAmount <= 0) {
             return interaction.reply({ content: t('side_bet.invalid_amount'), flags: MessageFlags.Ephemeral });
-        }
-
-        const rawPrediction = interaction.fields.getTextInputValue('sideBetPrediction').toLowerCase().trim();
-        const prediction = rawPrediction === 'mavi' || rawPrediction === 'blue' ? 'blue'
-                         : rawPrediction === 'kırmızı' || rawPrediction === 'red' ? 'red'
-                         : null;
-        if (!prediction) {
-            return interaction.reply({ content: t('side_bet.invalid_prediction'), flags: MessageFlags.Ephemeral });
         }
 
         const user = userRepository.getUserById(interaction.user.id);
@@ -240,25 +272,26 @@ async function handleModal(interaction) {
 
     if (!customId.startsWith('betModal-')) return;
 
+    // betModal-{matchId}-{minBetAmount}-{prediction}
     const parts = customId.split('-');
-    if (parts.length !== 3) {
+    if (parts.length !== 4) {
         return interaction.reply({ content: t('modal.invalid'), flags: MessageFlags.Ephemeral });
     }
 
-    const matchId = parts[1];
+    const matchId      = parts[1];
     const minBetAmount = parseInt(parts[2], 10);
+    const winOrLose    = parts[3];
+
     if (isNaN(minBetAmount) || minBetAmount <= 0) {
         return interaction.reply({ content: t('modal.invalid_amount'), flags: MessageFlags.Ephemeral });
+    }
+    if (winOrLose !== 'win' && winOrLose !== 'lose') {
+        return interaction.reply({ content: t('modal.invalid'), flags: MessageFlags.Ephemeral });
     }
 
     const betAmount = parseInt(interaction.fields.getTextInputValue('betAmountInput'), 10);
     if (isNaN(betAmount) || betAmount < minBetAmount) {
         return interaction.reply({ content: t('modal.invalid_bet', { min: minBetAmount }), flags: MessageFlags.Ephemeral });
-    }
-
-    const winOrLose = interaction.fields.getTextInputValue('winPredictionInput').toLowerCase();
-    if (winOrLose !== 'win' && winOrLose !== 'lose') {
-        return interaction.reply({ content: t('modal.invalid_prediction'), flags: MessageFlags.Ephemeral });
     }
 
     const user = userRepository.getUserById(interaction.user.id);

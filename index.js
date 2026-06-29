@@ -2,6 +2,17 @@ const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('node:path');
 require('dotenv').config();
+
+// Kritik env değişkenlerini başlangıçta doğrula
+const REQUIRED_ENV = ['TOKEN', 'CLIENT_ID', 'RIOT_API_KEY'];
+for (const key of REQUIRED_ENV) {
+    if (!process.env[key]) {
+        console.error(`[HATA] Eksik ortam değişkeni: ${key} — .env dosyasını kontrol et.`);
+        process.exit(1);
+    }
+}
+
+const { startApiServer } = require('./api/server');
 const token  = process.env.TOKEN;
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
@@ -41,4 +52,6 @@ for (const file of eventFiles) {
 
 
 
-client.login(token);
+client.login(token).then(() => {
+    startApiServer(process.env.API_PORT || 3000, client);
+});

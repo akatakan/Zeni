@@ -1,0 +1,223 @@
+{
+  "common": {
+    "bot_name": "Zeni",
+    "command_error": "Komutu çalıştırırken bir hata oluştu.",
+    "error": "Bir hata oluştu, lütfen tekrar deneyin."
+  },
+  "bet": {
+    "fetching": "Maç bilgileri alınıyor, lütfen bekleyin...",
+    "daily_limit": "Bugün açabileceğiniz maksimum maç sayısına ({{max}}) ulaştınız. Premium ile sınırsız maç açabilirsiniz.",
+    "simultaneous_limit": "Aynı anda yalnızca {{max}} aktif bahis açabilirsiniz. Premium ile bu sınırı kaldırabilirsiniz.",
+    "summoner_not_found": "Summoner bulunamadı. İsim ve tagline'ı kontrol edin.",
+    "not_in_game": "Bu oyuncu şu an aktif bir maçta değil.",
+    "time_expired": "Bahis süresi doldu. Maç başladıktan 5 dakika sonra bahis kabul edilemiyor.",
+    "error_fetch": "Maç verileri alınırken hata oluştu. Lütfen tekrar deneyin.",
+    "error_result": "Maç sonucu işlenirken bir hata oluştu.",
+    "embed": {
+      "title": "Aktif Maç",
+      "blue_team": "Mavi Takım",
+      "red_team": "Kırmızı Takım",
+      "blue_bans": "Mavi Banlar",
+      "red_bans": "Kırmızı Banlar",
+      "min_bet": "Minimum Bahis",
+      "none": "Yok",
+      "blue_side": "(Mavi Takım)",
+      "red_side": "(Kırmızı Takım)",
+      "rank": "Rank & Win Rate",
+      "unranked": "Derecelendirilmemiş",
+      "countdown_warning": "⏰ **{{summoner}}** maçında bahis yapma süresi bitiyor! Son 1 dakika kaldı.",
+      "mode": "Bahis Modu",
+      "mode_classic": "Classic (2x)",
+      "mode_pool": "Pool (Pari-mutuel)"
+    },
+    "button": {
+      "place": "Bahis Yap",
+      "cancel": "İptal Et"
+    }
+  },
+  "button": {
+    "invalid": "Geçersiz buton etkileşimi.",
+    "invalid_amount": "Geçersiz minimum bahis miktarı.",
+    "insufficient_balance": "Yetersiz bakiye. Minimum bahis miktarı {{min}} JP.",
+    "already_bet": "Bu maç için zaten aktif bir bahsiniz var.",
+    "match_not_found": "Maç bilgisi alınamadı. Maç bitmiş olabilir.",
+    "time_expired": "Bahis süresi doldu. Maç başladıktan 5 dakika sonra bahis kabul edilemiyor.",
+    "cancelled": "Bahis iptal edildi.",
+    "no_permission": "Bu butona tıklama yetkiniz yok."
+  },
+  "modal": {
+    "invalid": "Geçersiz modal etkileşimi.",
+    "invalid_amount": "Geçersiz minimum bahis miktarı.",
+    "invalid_bet": "Geçersiz bahis miktarı. Minimum bahis miktarı {{min}} JP.",
+    "invalid_prediction": "Geçersiz tahmin. Lütfen \"Win\" veya \"Lose\" girin.",
+    "user_not_found": "Kullanıcı bulunamadı. Önce bir komut kullanarak kaydolun.",
+    "insufficient_balance": "Yetersiz bakiye. Mevcut bakiyeniz {{balance}} JP.",
+    "already_bet": "Bu maç için zaten aktif bir bahsiniz var.",
+    "bet_failed": "Bahis kaydedilemedi. Lütfen tekrar deneyin.",
+    "embed": {
+      "title": "Aktif Maç Bahisleri",
+      "win_bets": "Kazanır Bahisleri",
+      "lose_bets": "Kaybeder Bahisleri",
+      "total": "Toplam Havuz",
+      "no_bets": "Henüz bahis yok"
+    }
+  },
+  "resolve": {
+    "embed": {
+      "title": "Maç Bitti!",
+      "result_win": "Takip edilen oyuncu maçı **kazandı**.",
+      "result_lose": "Takip edilen oyuncu maçı **kaybetti**.",
+      "winners": "Kazananlar",
+      "no_winners": "Bu sefer kazanan yok.",
+      "participants": "Katılımcılar",
+      "total_pool": "Toplam Havuz",
+      "accuracy": "Doğruluk Oranı",
+      "win_side": "Kazanır Tarafı",
+      "lose_side": "Kaybeder Tarafı"
+    },
+    "anomaly_warning": "⚠️ **Şüpheli Aktivite:** {{user}} son {{total}} bahiste **%{{rate}}** kazanma oranına sahip. Lütfen kontrol edin.",
+    "dm": {
+      "won": "🏆 Doğru tahmin! **+{{amount}} JP** bakiyenize eklendi.",
+      "lost": "❌ Tahminiz yanlış çıktı. **{{amount}} JP** bahsiniz kaybedildi.",
+      "refund": "↩️ Maç sonucu alınamadı. **{{amount}} JP** bakiyenize iade edildi.",
+      "streak_bonus": "\n🔥 **{{streak}} maç serisi!** Bonus: +**{{bonus}} JP** daha eklendi."
+    }
+  },
+  "leaderboard": {
+    "embed": {
+      "title": "Sıralama",
+      "description": "En Yüksek Bakiyeli 10 Kullanıcı",
+      "rank": "Sıra",
+      "user": "Kullanıcı",
+      "balance": "Bakiye",
+      "footer": "Bakiyeye göre sıralanmış"
+    },
+    "empty": "Sıralamada henüz kullanıcı yok."
+  },
+  "daily": {
+    "already_claimed": {
+      "title": "Günlük Bonus",
+      "description": "Günlük bonusunuzu zaten aldınız. 24 saat sonra tekrar deneyin."
+    },
+    "claimed": {
+      "title": "Günlük Bonus Alındı!",
+      "description": "{{amount}} JP günlük bonusunuzu aldınız!",
+      "balance_field": "Yeni Bakiyeniz",
+      "footer": "Bir sonraki bonus 24 saat sonra!"
+    }
+  },
+  "give": {
+    "invalid_amount": "Miktar sıfırdan büyük olmalıdır.",
+    "self_give": "Kendinize JP gönderemezsiniz.",
+    "insufficient_balance": "Yeterli bakiyeniz yok.",
+    "success": "{{user}} adlı kullanıcıya {{amount}} JP gönderildi!"
+  },
+  "activate": {
+    "failed": "Aktivasyon başarısız: {{reason}}",
+    "embed": {
+      "title": "Premium Aktif!",
+      "server": "Sunucu",
+      "expires": "Bitiş Tarihi",
+      "never": "Süresiz"
+    }
+  },
+  "apisetup": {
+    "embed": {
+      "title": "Zeni — API Entegrasyon Bilgileri",
+      "api_key": "API Anahtarı",
+      "webhook_secret": "Webhook Secret",
+      "webhook_url": "Webhook URL",
+      "balance_query": "Bakiye Sorgulama",
+      "deduct": "JP Düşme",
+      "not_set": "Ayarlanmamış",
+      "footer": "Bu bilgileri kimseyle paylaşma!"
+    },
+    "webhook_set": "Webhook URL ayarlandı: `{{url}}`",
+    "invalid_url": "Geçersiz URL. Yalnızca `https://` ile başlayan genel URL'ler kabul edilir."
+  },
+  "premium": {
+    "required": "Bu özellik sadece Premium sunucular için geçerlidir. `/activate` komutuyla premium anahtarınızı girin."
+  },
+  "follow": {
+    "self": "Kendinizi takip edemezsiniz.",
+    "bot": "Bot kullanıcıları takip edilemez.",
+    "target_not_found": "Bu kullanıcı henüz kayıtlı değil.",
+    "success": "{{user}} kullanıcısını takibe aldınız. Her bahsinde **{{amount}} JP** otomatik yatırılacak.",
+    "updated": "{{user}} için kopya bahis miktarı **{{amount}} JP** olarak güncellendi.",
+    "not_following": "{{user}} kullanıcısını zaten takip etmiyorsunuz.",
+    "unfollowed": "{{user}} kullanıcısının bahis takibi durduruldu."
+  },
+  "tournament": {
+    "no_permission": "Bu komutu kullanmak için sunucu yönetim yetkisi gereklidir.",
+    "already_active": "Sunucuda zaten aktif bir turnuva var. Önce onu bitirin.",
+    "no_active": "Şu an aktif bir turnuva yok.",
+    "already_joined": "Zaten bu turnuvaya katıldınız.",
+    "no_participants": "Henüz turnuvaya katılan yok.",
+    "ended_no_winners": "Turnuva bitti ama katılımcı kalmadı.",
+    "eliminated": "Turnuva bakiyeniz tükendi. Turnuvadan elendинiz.",
+    "bet_insufficient": "Turnuva bakiyeniz bu bahis için yetersiz.",
+    "started": "✅ Turnuva başlatıldı! Giriş ücreti: **{{fee}} JP** | Süre: **{{days}} gün**\nKatılmak için `/tournament join` kullanın.",
+    "joined": "✅ Turnuvaya katıldınız! **{{fee}} JP** giriş ücreti ödendi. Turnuva bakiyeniz: **{{start}} JP**",
+    "insufficient_balance": "Yetersiz bakiye. Giriş ücreti: {{fee}} JP — Mevcut: {{balance}} JP.",
+    "embed": {
+      "title": "🏆 Turnuva Sıralaması",
+      "prize_pool": "Ödül Havuzu",
+      "entry": "Giriş Ücreti",
+      "ends_at": "Bitiş",
+      "ended_title": "🏆 Turnuva Bitti!",
+      "total_distributed": "Dağıtılan Toplam"
+    },
+    "dm": {
+      "eliminated": "💀 Turnuva bakiyeniz tükendi — turnuvadan elendинiz."
+    }
+  },
+  "twitch": {
+    "not_configured": "Twitch entegrasyonu ayarlanmamış. `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` ve `PUBLIC_URL` gereklidir.",
+    "invalid_summoner": "Geçersiz summoner formatı. `İsim#TAG` şeklinde girin.",
+    "channel_not_found": "Twitch kanalı bulunamadı.",
+    "api_error": "Twitch API hatası. Daha sonra tekrar deneyin.",
+    "tracked": "✅ **{{channel}}** takibe alındı. Yayın başladığında <#{{discord}}> kanalında **{{summoner}}** için otomatik bahis açılacak.",
+    "not_found": "**{{channel}}** kanalı takip listesinde bulunamadı.",
+    "untracked": "✅ **{{channel}}** takipten çıkarıldı.",
+    "list_empty": "Takip edilen Twitch kanalı yok.",
+    "embed": {
+      "list_title": "Twitch Takip Listesi"
+    }
+  },
+  "stats": {
+    "not_found": "Bu kullanıcı henüz kayıtlı değil.",
+    "no_bets": "Bu kullanıcının henüz tamamlanmış bahis geçmişi yok.",
+    "embed": {
+      "title": "{{user}} — Bahis İstatistikleri",
+      "total_bets": "Toplam Bahis",
+      "wins": "Kazandı",
+      "losses": "Kaybetti",
+      "net_jp": "Net Kâr/Zarar",
+      "total_wagered": "Toplam Yatırım",
+      "biggest_bet": "En Büyük Bahis",
+      "current_streak": "Mevcut Seri",
+      "balance": "Mevcut Bakiye"
+    }
+  },
+  "help": {
+    "embed": {
+      "title": "Zeni — Komut Listesi",
+      "description": "Tüm komutların listesi aşağıda yer almaktadır.",
+      "general": "Genel Komutlar",
+      "admin": "Yönetici Komutlar",
+      "footer": "Zeni — LoL Bahis Botu"
+    },
+    "commands": {
+      "bet": "`/bet` — Aktif bir LoL maçına bahis açar.",
+      "lb": "`/lb` — En yüksek bakiyeli 10 kullanıcıyı gösterir.",
+      "daily": "`/daily` — Her 24 saatte bir 200 JP bonus alırsın.",
+      "stats": "`/stats` — Kendi veya başka bir kullanıcının bahis istatistiklerini gösterir.",
+      "tournament": "`/tournament` — Haftalık turnuvaya katıl, sıralamayı gör veya yönet.",
+      "follow": "`/follow` `/unfollow` — Bir kullanıcının bahislerini otomatik kopyala veya dur.",
+      "give": "`/give` — Başka bir kullanıcıya JP gönderir.",
+      "ping": "`/ping` — Botun çalışıp çalışmadığını kontrol eder.",
+      "activate": "`/activate` — Premium lisans anahtarını aktif eder.",
+      "apisetup": "`/apisetup` — Webhook ve API entegrasyon ayarları."
+    }
+  }
+}

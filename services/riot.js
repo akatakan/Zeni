@@ -33,7 +33,7 @@ class RiotAPI {
             }
             return null;
         }
-  
+
     }
 
     updateRateLimits(url, headers) {
@@ -60,9 +60,29 @@ class RiotAPI {
             }
         }
     }
+
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
+
+    regionToCluster(region) {
+        const clusterMap = {
+            NA: 'americas', BR: 'americas', LAN: 'americas', LAS: 'americas',
+            EUW: 'europe', EUNE: 'europe', TR: 'europe', RU: 'europe',
+            KR: 'asia', JP: 'asia',
+        };
+        return clusterMap[region] || 'europe';
+    }
+
+    regionToPrefix(region) {
+        const map = {
+            NA: 'na1', EUW: 'euw1', EUNE: 'eun1',
+            KR: 'kr', TR: 'tr1', JP: 'jp1',
+            BR: 'br1', LAN: 'la1', LAS: 'la2',
+        };
+        return map[region] || 'euw1';
+    }
+
     async getAccountBySummonerName(summonerName, tagline) {
         console.log(`Fetching account for ${summonerName}#${tagline}`);
         return this.request({
@@ -70,22 +90,18 @@ class RiotAPI {
             url: `/riot/account/v1/accounts/by-riot-id/${summonerName}/${tagline}`
         });
     }
-    
-    async getActiveGameBySummonerId(region,summonerId) {
-        const regionToPrefix = {
-            NA: 'na1',
-            EUW: 'euw1',
-            EUNE: 'eun1',
-            KR: 'kr',
-            TR: 'tr1',
-            JP: 'jp1',
-            BR: 'br1',
-            LAN: 'la1',
-            LAS: 'la2',
-        };
+
+    async getActiveGameBySummonerId(region, summonerId) {
         return this.request({
-            baseURL: `https://${regionToPrefix[region]}.api.riotgames.com`,
+            baseURL: `https://${this.regionToPrefix(region)}.api.riotgames.com`,
             url: `/lol/spectator/v5/active-games/by-summoner/${summonerId}`
+        });
+    }
+
+    async getRankByPuuid(puuid, region) {
+        return this.request({
+            baseURL: `https://${this.regionToPrefix(region)}.api.riotgames.com`,
+            url: `/lol/league/v4/entries/by-puuid/${puuid}`
         });
     }
 
@@ -97,22 +113,25 @@ class RiotAPI {
         });
     }
 
-    async getMatchById(matchId) {
+    async getMatchById(matchId, region) {
+        const cluster = this.regionToCluster(region);
         return this.request({
-            baseURL: 'https://europe.api.riotgames.com',
+            baseURL: `https://${cluster}.api.riotgames.com`,
             url: `/lol/match/v5/matches/${matchId}`
         });
     }
 
-    async isMatchEnd(matchId) {
-        const match = await this.getMatchById(matchId);
+    async isMatchEnd(matchId, region) {
+        const match = await this.getMatchById(matchId, region);
         if (!match) return false;
         return match.info.gameEndTimestamp != null;
     }
 
-    async getMatchEndResult(matchId, summoner) {
-        const match = await this.getMatchById(matchId);
+    async getMatchEndResult(matchId, summoner, region) {
+        const match = await this.getMatchById(matchId, region);
+        if (!match) return null;
         const participant = match.info.participants.find(p => p.puuid === summoner.puuid);
+        if (!participant) return null;
         return participant.win ? 'win' : 'lose';
     }
 }

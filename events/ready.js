@@ -5,6 +5,7 @@ const { loadChampions, scheduleChampionRefresh } = require('../util/championCach
 const betRepository = require('../db/betRepository');
 const twitchRepository = require('../db/twitchRepository');
 const twitchService = require('../services/twitch');
+const { createGuildSettings } = require('../db/guildRepository');
 const logger = require('../util/logger');
 
 module.exports = {

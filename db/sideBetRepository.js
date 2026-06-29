@@ -29,4 +29,17 @@ const markSideBetResults = (matchId, firstBloodTeam, firstTowerTeam) => {
     `).run(firstBloodTeam, firstBloodTeam, firstTowerTeam, firstTowerTeam, matchId);
 };
 
-module.exports = { addSideBet, hasSideBet, getSideBetsByMatch, markSideBetResults };
+const getSideBetStatsByUserId = (userId) => {
+    return db.prepare(`
+        SELECT
+            COUNT(*) as total_bets,
+            SUM(CASE WHEN won = 1 THEN 1 ELSE 0 END) as wins,
+            SUM(CASE WHEN won = 0 THEN 1 ELSE 0 END) as losses,
+            SUM(amount) as total_wagered,
+            SUM(CASE WHEN won = 1 THEN amount ELSE -amount END) as net_jp
+        FROM side_bets
+        WHERE user_id = ? AND won IS NOT NULL
+    `).get(userId);
+};
+
+module.exports = { addSideBet, hasSideBet, getSideBetsByMatch, markSideBetResults, getSideBetStatsByUserId };

@@ -198,7 +198,12 @@
       "total_wagered": "Toplam Yatırım",
       "biggest_bet": "En Büyük Bahis",
       "current_streak": "Mevcut Seri",
-      "balance": "Mevcut Bakiye"
+      "balance": "Mevcut Bakiye",
+      "side_bet_total": "Side Bet Toplam",
+      "side_bet_wins": "Side Bet Kazandı",
+      "side_bet_losses": "Side Bet Kaybetti",
+      "side_bet_net_jp": "Side Bet Net",
+      "side_bet_wagered": "Side Bet Yatırım"
     }
   },
   "side_bet": {

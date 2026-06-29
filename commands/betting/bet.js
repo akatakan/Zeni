@@ -177,7 +177,7 @@ module.exports = {
             if (timeRemaining > 60 * 1000) {
                 setTimeout(async () => {
                     try {
-                        await interaction.channel.send(t('bet.countdown_warning', { summoner: `${summonerName}#${tagline}` }));
+                        await interaction.channel.send(t('bet.embed.countdown_warning', { summoner: `${summonerName}#${tagline}` }));
                     } catch (_) {}
                 }, timeRemaining - 60 * 1000);
             }

@@ -199,6 +199,25 @@
       "balance": "Mevcut Bakiye"
     }
   },
+  "risk": {
+    "no_permission": "Bu komutu kullanmak için Sunucu Yönetimi veya Üye Moderasyonu yetkisi gereklidir.",
+    "blocked": "Riskli kullanıcı grubundasınız. Bahis yapabilmek için bir yetkiliyle iletişime geçin.",
+    "flagged": "{{user}} kullanıcısı riskli grubuna eklendi.",
+    "unflagged": "{{user}} kullanıcısı riskli gruptan çıkarıldı.",
+    "not_flagged": "{{user}} kullanıcısı zaten riskli grupta değil.",
+    "list_empty": "Riskli grupta kullanıcı bulunmuyor.",
+    "no_reports": "{{user}} kullanıcısına ait rapor bulunamadı.",
+    "embed": {
+      "title": "Riskli Kullanıcılar",
+      "reports_title": "{{user}} — Raporlar"
+    }
+  },
+  "report": {
+    "self": "Kendinizi raporlayamazsınız.",
+    "bot": "Bot kullanıcıları raporlanamaz.",
+    "success": "Raporunuz alındı. Yetkililer inceleyecektir.",
+    "dm_admin": "📋 **Yeni Rapor**\nRaporlayan: {{reporter}}\nRaporlanan: {{reported}}\nSebep: {{reason}}"
+  },
   "help": {
     "embed": {
       "title": "Zeni — Komut Listesi",

@@ -106,6 +106,29 @@ CREATE TABLE IF NOT EXISTS twitch_tracking (
 );
 `).run();
 
+db.prepare(`
+CREATE TABLE IF NOT EXISTS risk_users (
+    guild_id   TEXT NOT NULL,
+    user_id    TEXT NOT NULL,
+    reason     TEXT,
+    flagged_by TEXT,
+    flagged_at INTEGER,
+    PRIMARY KEY (guild_id, user_id)
+);
+`).run();
+
+db.prepare(`
+CREATE TABLE IF NOT EXISTS reports (
+    report_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id    TEXT NOT NULL,
+    reporter_id TEXT NOT NULL,
+    reported_id TEXT NOT NULL,
+    match_id    TEXT,
+    reason      TEXT,
+    created_at  INTEGER
+);
+`).run();
+
 // Migrations: eski kurulumlar için eksik sütunları ekle
 try { db.prepare('ALTER TABLE users         ADD COLUMN bet_streak INTEGER DEFAULT 0').run(); }      catch (_) {}
 try { db.prepare('ALTER TABLE bets          ADD COLUMN won INTEGER DEFAULT NULL').run(); }           catch (_) {}

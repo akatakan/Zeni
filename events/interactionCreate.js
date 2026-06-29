@@ -6,6 +6,7 @@ const betRepository = require('../db/betRepository');
 const followRepository = require('../db/followRepository');
 const tournamentRepository = require('../db/tournamentRepository');
 const { stopWatchingMatch } = require('../util/watchmatch');
+const { isRisky } = require('../db/riskRepository');
 
 module.exports = {
     name: Events.InteractionCreate,
@@ -51,6 +52,10 @@ async function handleButton(interaction) {
         const minBetAmount = parseInt(parts[2], 10);
         if (isNaN(minBetAmount) || minBetAmount <= 0) {
             return interaction.reply({ content: t('button.invalid_amount'), flags: MessageFlags.Ephemeral });
+        }
+
+        if (isRisky(interaction.guildId, interaction.user.id)) {
+            return interaction.reply({ content: t('risk.blocked'), flags: MessageFlags.Ephemeral });
         }
 
         let user = userRepository.getUserById(interaction.user.id);

@@ -121,6 +121,21 @@ class RiotAPI {
         });
     }
 
+    async getSideBetResults(matchId, region) {
+        const match = await this.getMatchById(matchId, region);
+        if (!match) return null;
+
+        const firstBloodParticipant = match.info.participants.find(p => p.firstBloodKill);
+        const firstBloodTeam = firstBloodParticipant
+            ? (firstBloodParticipant.teamId === 100 ? 'blue' : 'red')
+            : null;
+
+        const blueTeam = match.info.teams.find(t => t.teamId === 100);
+        const firstTowerTeam = blueTeam?.objectives?.tower?.first ? 'blue' : 'red';
+
+        return { firstBlood: firstBloodTeam, firstTower: firstTowerTeam };
+    }
+
     async isMatchEnd(matchId, region) {
         const match = await this.getMatchById(matchId, region);
         if (!match) return false;

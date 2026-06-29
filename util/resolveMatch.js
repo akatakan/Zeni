@@ -5,6 +5,7 @@ const riotApi = require('../services/riot');
 const betRepository = require('../db/betRepository');
 const userRepository = require('../db/userRepository');
 const tournamentRepository = require('../db/tournamentRepository');
+const sideBetRepository = require('../db/sideBetRepository');
 const logger = require('./logger');
 
 function getStreakBonus(streak) {
@@ -64,6 +65,7 @@ async function resolveMatch(matchId, summoner, region, client) {
         return null;
     }
 
+    const sideBetResults = await riotApi.getSideBetResults(matchId, region);
     const matchResult = await riotApi.getMatchEndResult(matchId, summoner, region);
     if (!matchResult) {
         logger.error('Maç sonucu alınamadı, bahisler iade ediliyor', { matchId });
@@ -124,6 +126,28 @@ async function resolveMatch(matchId, summoner, region, client) {
         } else {
             userRepository.resetStreak(loser.user_id);
             await sendDM(client, loser.user_id, t('resolve.dm.lost', { matchId, amount: loser.amount }));
+        }
+    }
+
+    // Side bet çözümü
+    if (sideBetResults) {
+        const sideBets = sideBetRepository.getSideBetsByMatch(matchId);
+        if (sideBets.length > 0) {
+            sideBetRepository.markSideBetResults(matchId, sideBetResults.firstBlood, sideBetResults.firstTower);
+
+            for (const sb of sideBets) {
+                const isWin = (sb.event_type === 'first_blood' && sb.prediction === sideBetResults.firstBlood) ||
+                              (sb.event_type === 'first_tower'  && sb.prediction === sideBetResults.firstTower);
+
+                if (isWin) {
+                    const payout = Math.floor(sb.amount * 2.5);
+                    userRepository.addUserBalance(sb.user_id, payout);
+                    const eventKey = sb.event_type === 'first_blood' ? 'side_bet.event_blood' : 'side_bet.event_tower';
+                    await sendDM(client, sb.user_id, t('side_bet.dm.won', { event: t(eventKey), amount: payout }));
+                } else {
+                    await sendDM(client, sb.user_id, t('side_bet.dm.lost', { event: t(sb.event_type === 'first_blood' ? 'side_bet.event_blood' : 'side_bet.event_tower'), amount: sb.amount }));
+                }
+            }
         }
     }
 

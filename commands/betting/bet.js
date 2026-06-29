@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle, MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle, MessageFlags, ComponentType } = require('discord.js');
 const { useT } = require('../../util/i18n');
 const COLORS = require('../../util/colors');
 const riotApi = require('../../services/riot');
@@ -154,7 +154,23 @@ module.exports = {
                 .setLabel(t('bet.button.cancel'))
                 .setStyle(ButtonStyle.Danger);
 
-            await interaction.editReply({ embeds: [embed], components: [new ActionRowBuilder().addComponents(joinBtn, quitBtn)] });
+            const rows = [new ActionRowBuilder().addComponents(joinBtn, quitBtn)];
+
+            if (isPremium(interaction.guildId)) {
+                const firstBloodBtn = new ButtonBuilder()
+                    .setCustomId(`sideBet-${matchId}-${minBetAmount}-first_blood`)
+                    .setLabel(t('bet.button.side_first_blood'))
+                    .setStyle(ButtonStyle.Primary);
+
+                const firstTowerBtn = new ButtonBuilder()
+                    .setCustomId(`sideBet-${matchId}-${minBetAmount}-first_tower`)
+                    .setLabel(t('bet.button.side_first_tower'))
+                    .setStyle(ButtonStyle.Primary);
+
+                rows.push(new ActionRowBuilder().addComponents(firstBloodBtn, firstTowerBtn));
+            }
+
+            await interaction.editReply({ embeds: [embed], components: rows });
 
             // Bahis kapanmadan 1 dakika önce kanal uyarısı
             const timeRemaining = (300 - activeGame.gameLength) * 1000;

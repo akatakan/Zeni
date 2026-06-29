@@ -32,7 +32,9 @@
     },
     "button": {
       "place": "Bahis Yap",
-      "cancel": "İptal Et"
+      "cancel": "İptal Et",
+      "side_first_blood": "🩸 İlk Kan Bahsi",
+      "side_first_tower": "🏰 İlk Kule Bahsi"
     }
   },
   "button": {
@@ -199,6 +201,22 @@
       "balance": "Mevcut Bakiye"
     }
   },
+  "side_bet": {
+    "modal_title_blood": "İlk Kan Bahsi",
+    "modal_title_tower": "İlk Kule Bahsi",
+    "event_blood": "İlk Kan",
+    "event_tower": "İlk Kule",
+    "team_blue": "Mavi Takım",
+    "team_red": "Kırmızı Takım",
+    "already_bet": "Bu event için zaten bir bahsiniz var.",
+    "invalid_amount": "Geçersiz bahis miktarı.",
+    "invalid_prediction": "Geçersiz tahmin. Lütfen \"Mavi\" veya \"Kırmızı\" girin.",
+    "success": "{{event}} bahsiniz kaydedildi! Tahmin: **{{prediction}}** — {{amount}} JP yatırıldı.",
+    "dm": {
+      "won": "🎯 {{event}} tahminiz doğru! **+{{amount}} JP** kazandınız.",
+      "lost": "❌ {{event}} tahminiz yanlış çıktı. **{{amount}} JP** kaybedildi."
+    }
+  },
   "risk": {
     "no_permission": "Bu komutu kullanmak için Sunucu Yönetimi veya Üye Moderasyonu yetkisi gereklidir.",
     "blocked": "Riskli kullanıcı grubundasınız. Bahis yapabilmek için bir yetkiliyle iletişime geçin.",
@@ -227,7 +245,7 @@
       "footer": "Zeni — LoL Bahis Botu"
     },
     "commands": {
-      "bet": "`/bet` — Aktif bir LoL maçına bahis açar.",
+      "bet": "`/bet` — Aktif bir LoL maçına bahis açar. Premium: İlk Kan ve İlk Kule yan bahisleri.",
       "lb": "`/lb` — En yüksek bakiyeli 10 kullanıcıyı gösterir.",
       "daily": "`/daily` — Her 24 saatte bir 200 JP bonus alırsın.",
       "stats": "`/stats` — Kendi veya başka bir kullanıcının bahis istatistiklerini gösterir.",

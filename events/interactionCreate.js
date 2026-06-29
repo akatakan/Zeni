@@ -7,6 +7,7 @@ const followRepository = require('../db/followRepository');
 const tournamentRepository = require('../db/tournamentRepository');
 const { stopWatchingMatch } = require('../util/watchmatch');
 const { isRisky } = require('../db/riskRepository');
+const sideBetRepository = require('../db/sideBetRepository');
 
 module.exports = {
     name: Events.InteractionCreate,
@@ -104,6 +105,57 @@ async function handleButton(interaction) {
         await interaction.showModal(modal);
     }
 
+    else if (customId.startsWith('sideBet-')) {
+        const parts = customId.split('-');
+        // sideBet-{matchId}-{minBetAmount}-{eventType}  (eventType may contain '_')
+        if (parts.length < 4) {
+            return interaction.reply({ content: t('button.invalid'), flags: MessageFlags.Ephemeral });
+        }
+        const matchId     = parts[1];
+        const minBetAmount = parseInt(parts[2], 10);
+        const eventType   = parts.slice(3).join('-'); // 'first_blood' or 'first_tower'
+
+        if (isRisky(interaction.guildId, interaction.user.id)) {
+            return interaction.reply({ content: t('risk.blocked'), flags: MessageFlags.Ephemeral });
+        }
+
+        const match = betRepository.getMatchBetById(matchId);
+        if (!match) {
+            return interaction.reply({ content: t('button.match_not_found'), flags: MessageFlags.Ephemeral });
+        }
+        if (Date.now() - match.started_at > 5 * 60 * 1000) {
+            return interaction.reply({ content: t('button.time_expired'), flags: MessageFlags.Ephemeral });
+        }
+        if (sideBetRepository.hasSideBet(matchId, interaction.user.id, eventType)) {
+            return interaction.reply({ content: t('side_bet.already_bet'), flags: MessageFlags.Ephemeral });
+        }
+
+        const label = eventType === 'first_blood' ? t('side_bet.modal_title_blood') : t('side_bet.modal_title_tower');
+        const modal = new ModalBuilder()
+            .setCustomId(`sideBetModal-${matchId}-${eventType}`)
+            .setTitle(label);
+
+        const amountInput = new TextInputBuilder()
+            .setCustomId('sideBetAmount')
+            .setLabel(`Bahis Miktarı (Min. ${minBetAmount} JP)`)
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder('Bahis miktarınızı girin')
+            .setRequired(true);
+
+        const predictionInput = new TextInputBuilder()
+            .setCustomId('sideBetPrediction')
+            .setLabel('Tahmin: Mavi veya Kırmızı')
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder('Mavi / Kırmızı')
+            .setRequired(true);
+
+        modal.addComponents(
+            new ActionRowBuilder().addComponents(amountInput),
+            new ActionRowBuilder().addComponents(predictionInput),
+        );
+        await interaction.showModal(modal);
+    }
+
     else if (customId.startsWith('quitBet-')) {
         const parts = customId.split('-');
         if (parts.length !== 3) {
@@ -133,6 +185,59 @@ async function handleButton(interaction) {
 async function handleModal(interaction) {
     const t = useT(interaction);
     const { customId } = interaction;
+
+    if (customId.startsWith('sideBetModal-')) {
+        const parts = customId.split('-');
+        if (parts.length < 3) {
+            return interaction.reply({ content: t('modal.invalid'), flags: MessageFlags.Ephemeral });
+        }
+        const matchId   = parts[1];
+        const eventType = parts.slice(2).join('-');
+
+        const match = betRepository.getMatchBetById(matchId);
+        if (!match) {
+            return interaction.reply({ content: t('button.match_not_found'), flags: MessageFlags.Ephemeral });
+        }
+
+        const betAmount = parseInt(interaction.fields.getTextInputValue('sideBetAmount'), 10);
+        if (isNaN(betAmount) || betAmount <= 0) {
+            return interaction.reply({ content: t('side_bet.invalid_amount'), flags: MessageFlags.Ephemeral });
+        }
+
+        const rawPrediction = interaction.fields.getTextInputValue('sideBetPrediction').toLowerCase().trim();
+        const prediction = rawPrediction === 'mavi' || rawPrediction === 'blue' ? 'blue'
+                         : rawPrediction === 'kırmızı' || rawPrediction === 'red' ? 'red'
+                         : null;
+        if (!prediction) {
+            return interaction.reply({ content: t('side_bet.invalid_prediction'), flags: MessageFlags.Ephemeral });
+        }
+
+        const user = userRepository.getUserById(interaction.user.id);
+        if (!user) {
+            return interaction.reply({ content: t('modal.user_not_found'), flags: MessageFlags.Ephemeral });
+        }
+
+        const deducted = userRepository.deductBalance(interaction.user.id, betAmount);
+        if (!deducted) {
+            return interaction.reply({ content: t('modal.insufficient_balance', { balance: user.balance }), flags: MessageFlags.Ephemeral });
+        }
+
+        try {
+            sideBetRepository.addSideBet(matchId, interaction.user.id, eventType, prediction, betAmount);
+        } catch (err) {
+            userRepository.addUserBalance(interaction.user.id, betAmount);
+            const msg = err.message?.includes('UNIQUE') ? t('side_bet.already_bet') : t('modal.bet_failed');
+            return interaction.reply({ content: msg, flags: MessageFlags.Ephemeral });
+        }
+
+        const eventLabel = eventType === 'first_blood' ? t('side_bet.event_blood') : t('side_bet.event_tower');
+        const predLabel  = prediction === 'blue' ? t('side_bet.team_blue') : t('side_bet.team_red');
+        return interaction.reply({
+            content: t('side_bet.success', { event: eventLabel, prediction: predLabel, amount: betAmount }),
+            flags: MessageFlags.Ephemeral,
+        });
+    }
+
     if (!customId.startsWith('betModal-')) return;
 
     const parts = customId.split('-');

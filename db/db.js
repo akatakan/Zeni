@@ -107,6 +107,22 @@ CREATE TABLE IF NOT EXISTS twitch_tracking (
 `).run();
 
 db.prepare(`
+CREATE TABLE IF NOT EXISTS side_bets (
+    side_bet_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id    TEXT NOT NULL,
+    user_id     TEXT NOT NULL,
+    event_type  TEXT NOT NULL,
+    prediction  TEXT NOT NULL,
+    amount      INTEGER NOT NULL,
+    won         INTEGER DEFAULT NULL,
+    placed_at   INTEGER,
+    FOREIGN KEY(match_id) REFERENCES matches_bets(match_id) ON DELETE CASCADE,
+    FOREIGN KEY(user_id)  REFERENCES users(user_id) ON DELETE SET NULL,
+    UNIQUE(match_id, user_id, event_type)
+);
+`).run();
+
+db.prepare(`
 CREATE TABLE IF NOT EXISTS risk_users (
     guild_id   TEXT NOT NULL,
     user_id    TEXT NOT NULL,

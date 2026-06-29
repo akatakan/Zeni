@@ -149,6 +149,9 @@ async function handleButton(interaction) {
         const bets = await betRepository.getBetsByMatchId(matchId);
         for (const bet of bets) await userRepository.addUserBalance(bet.user_id, bet.amount);
 
+        const sideBets = await sideBetRepository.getSideBetsByMatch(matchId);
+        for (const sb of sideBets) await userRepository.addUserBalance(sb.user_id, sb.amount);
+
         await betRepository.closeMatchBet(matchId);
         await betRepository.deleteMatchBets(matchId);
         await betRepository.deleteBets(matchId);

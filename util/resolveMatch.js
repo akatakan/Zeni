@@ -77,6 +77,10 @@ async function resolveMatch(matchId, summoner, region, client) {
             }
             await sendDM(client, b.user_id, t('resolve.dm.refund', { matchId, amount: b.amount }));
         }
+
+        const sideBets = await sideBetRepository.getSideBetsByMatch(matchId);
+        for (const sb of sideBets) await userRepository.addUserBalance(sb.user_id, sb.amount);
+
         await betRepository.deleteMatchBets(matchId);
         return null;
     }

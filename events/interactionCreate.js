@@ -82,7 +82,7 @@ async function handleButton(interaction) {
         }
 
         const select = new StringSelectMenuBuilder()
-            .setCustomId(`betSelect-${matchId}-${minBetAmount}`)
+            .setCustomId(`betSelect-${matchId}-${minBetAmount}-${interaction.message.id}`)
             .setPlaceholder(t('bet.select_placeholder'))
             .addOptions(
                 new StringSelectMenuOptionBuilder().setLabel(t('bet.select_win')).setValue('win'),
@@ -167,12 +167,13 @@ async function handleSelect(interaction) {
 
     if (customId.startsWith('betSelect-')) {
         const parts = customId.split('-');
-        if (parts.length !== 3) return interaction.update({ components: [] });
+        if (parts.length !== 4) return interaction.update({ components: [] });
         const matchId      = parts[1];
         const minBetAmount = parts[2];
+        const messageId    = parts[3];
 
         const modal = new ModalBuilder()
-            .setCustomId(`betModal-${matchId}-${minBetAmount}-${prediction}`)
+            .setCustomId(`betModal-${matchId}-${minBetAmount}-${prediction}-${messageId}`)
             .setTitle(t('bet.embed.title'));
 
         modal.addComponents(
@@ -272,15 +273,16 @@ async function handleModal(interaction) {
 
     if (!customId.startsWith('betModal-')) return;
 
-    // betModal-{matchId}-{minBetAmount}-{prediction}
+    // betModal-{matchId}-{minBetAmount}-{prediction}-{messageId}
     const parts = customId.split('-');
-    if (parts.length !== 4) {
+    if (parts.length !== 5) {
         return interaction.reply({ content: t('modal.invalid'), flags: MessageFlags.Ephemeral });
     }
 
     const matchId      = parts[1];
     const minBetAmount = parseInt(parts[2], 10);
     const winOrLose    = parts[3];
+    const messageId    = parts[4];
 
     if (isNaN(minBetAmount) || minBetAmount <= 0) {
         return interaction.reply({ content: t('modal.invalid_amount'), flags: MessageFlags.Ephemeral });
@@ -346,26 +348,33 @@ async function handleModal(interaction) {
     const winBets  = bets.filter(b => b.prediction === 'win').map(b => `<@${b.user_id}>: ${b.amount} JP`);
     const loseBets = bets.filter(b => b.prediction === 'lose').map(b => `<@${b.user_id}>: ${b.amount} JP`);
 
-    const sourceEmbed = interaction.message.embeds[0];
-    if (!sourceEmbed) {
-        return interaction.reply({ content: t('common.error'), flags: MessageFlags.Ephemeral });
-    }
-    const matchFields = sourceEmbed.fields.slice(0, 5);
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-    const embed = new EmbedBuilder()
-        .setAuthor({ name: t('common.bot_name') })
-        .setTitle(t('modal.embed.title'))
-        .setColor(0xFFD700)
-        .setDescription(sourceEmbed.description)
-        .addFields(
-            ...matchFields,
-            { name: t('modal.embed.win_bets'),  value: winBets.length  > 0 ? winBets.join('\n')  : t('modal.embed.no_bets'), inline: true },
-            { name: t('modal.embed.lose_bets'), value: loseBets.length > 0 ? loseBets.join('\n') : t('modal.embed.no_bets'), inline: true },
-            { name: t('modal.embed.total'), value: `${bets.reduce((sum, b) => sum + b.amount, 0)} JP`, inline: false },
-        )
-        .setTimestamp();
+    try {
+        const match = betRepository.getMatchBetById(matchId);
+        const channel = await interaction.client.channels.fetch(match.channel_id);
+        const originalMsg = await channel.messages.fetch(messageId);
+        const sourceEmbed = originalMsg.embeds[0];
 
-    await interaction.update({ embeds: [embed] });
+        if (sourceEmbed) {
+            const matchFields = sourceEmbed.fields.slice(0, 5);
+            const embed = new EmbedBuilder()
+                .setAuthor({ name: t('common.bot_name') })
+                .setTitle(t('modal.embed.title'))
+                .setColor(0xFFD700)
+                .setDescription(sourceEmbed.description)
+                .addFields(
+                    ...matchFields,
+                    { name: t('modal.embed.win_bets'),  value: winBets.length  > 0 ? winBets.join('\n')  : t('modal.embed.no_bets'), inline: true },
+                    { name: t('modal.embed.lose_bets'), value: loseBets.length > 0 ? loseBets.join('\n') : t('modal.embed.no_bets'), inline: true },
+                    { name: t('modal.embed.total'), value: `${bets.reduce((sum, b) => sum + b.amount, 0)} JP`, inline: false },
+                )
+                .setTimestamp();
+            await originalMsg.edit({ embeds: [embed] });
+        }
+    } catch (_) {}
+
+    await interaction.deleteReply();
 }
 
 // ─── Copy-bet tetikleyici ────────────────────────────────────────────────────

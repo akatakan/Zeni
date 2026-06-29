@@ -1,0 +1,2 @@
+Side betler iptal olunca geri iade edilmeli.
+Bet oynarken hata oluşuyor.

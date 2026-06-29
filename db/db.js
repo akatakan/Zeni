@@ -18,7 +18,7 @@ const initDb = async () => {
             match_id    TEXT PRIMARY KEY,
             creator_id  TEXT REFERENCES users(user_id) ON DELETE CASCADE,
             is_open     SMALLINT DEFAULT 1,
-            started_at  BIGINT,
+            started_at  TIMESTAMPTZ,
             closed_at   TIMESTAMPTZ,
             summoner_id TEXT,
             region      TEXT,
@@ -34,8 +34,8 @@ const initDb = async () => {
             status        TEXT DEFAULT 'active',
             entry_fee     INTEGER DEFAULT 500,
             prize_pool    INTEGER DEFAULT 0,
-            started_at    BIGINT,
-            ends_at       BIGINT
+            started_at    TIMESTAMPTZ,
+            ends_at       TIMESTAMPTZ
         )
     `);
 
@@ -110,7 +110,7 @@ const initDb = async () => {
             prediction  TEXT NOT NULL,
             amount      INTEGER NOT NULL,
             won         SMALLINT DEFAULT NULL,
-            placed_at   BIGINT,
+            placed_at   TIMESTAMPTZ,
             UNIQUE(match_id, user_id, event_type)
         )
     `);
@@ -121,7 +121,7 @@ const initDb = async () => {
             user_id    TEXT NOT NULL,
             reason     TEXT,
             flagged_by TEXT,
-            flagged_at BIGINT,
+            flagged_at TIMESTAMPTZ,
             PRIMARY KEY (guild_id, user_id)
         )
     `);
@@ -134,7 +134,7 @@ const initDb = async () => {
             reported_id TEXT NOT NULL,
             match_id    TEXT,
             reason      TEXT,
-            created_at  BIGINT
+            created_at  TIMESTAMPTZ
         )
     `);
 };

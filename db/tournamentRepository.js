@@ -1,8 +1,9 @@
 const { pool } = require('./db');
 
 const createTournament = async (guildId, entryFee, durationDays) => {
-    const startedAt = Date.now();
-    const endsAt = startedAt + durationDays * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const startedAt = new Date(now);
+    const endsAt = new Date(now + durationDays * 24 * 60 * 60 * 1000);
     const res = await pool.query(
         'INSERT INTO tournaments (guild_id, entry_fee, prize_pool, started_at, ends_at) VALUES ($1,$2,0,$3,$4) RETURNING *',
         [guildId, entryFee, startedAt, endsAt]

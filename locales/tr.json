@@ -224,7 +224,7 @@
     "invalid_prediction": "Geçersiz tahmin. Lütfen \"Mavi\" veya \"Kırmızı\" girin.",
     "success": "{{event}} bahsiniz kaydedildi! Tahmin: **{{prediction}}** — {{amount}} JP yatırıldı.",
     "dm": {
-      "won": "🎯 {{event}} tahminiz doğru! **+{{amount}} JP** kazandınız.",
+      "won": "🎯 {{event}} tahminiz doğru! **{{wagered}} JP → {{amount}} JP** (+{{profit}} JP kâr)",
       "lost": "❌ {{event}} tahminiz yanlış çıktı. **{{amount}} JP** kaybedildi.",
       "combo": "🔥 **{{count}}/3 Combo!** Tüm tahminlerin için **+{{bonus}} JP** combo bonusu kazandın!"
     }

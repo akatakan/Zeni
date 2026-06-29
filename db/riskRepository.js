@@ -6,7 +6,7 @@ const flagUser = async (guildId, userId, reason, flaggedBy) => {
         VALUES ($1, $2, $3, $4, $5)
         ON CONFLICT (guild_id, user_id) DO UPDATE
             SET reason = EXCLUDED.reason, flagged_by = EXCLUDED.flagged_by, flagged_at = EXCLUDED.flagged_at
-    `, [guildId, userId, reason || null, flaggedBy || null, Date.now()]);
+    `, [guildId, userId, reason || null, flaggedBy || null, new Date()]);
 };
 
 const unflagUser = async (guildId, userId) => {

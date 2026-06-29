@@ -19,17 +19,18 @@ describe('addSideBet', () => {
         await addSideBet('EUW1_1', 'user1', 'first_blood', 'blue', 100);
         const [sql, params] = pool.query.mock.calls[0];
         expect(sql).toContain('INSERT INTO side_bets');
-        expect(params).toEqual(['EUW1_1', 'user1', 'first_blood', 'blue', 100, expect.any(Number)]);
+        expect(params).toEqual(['EUW1_1', 'user1', 'first_blood', 'blue', 100, expect.any(Date)]);
     });
 
-    test('placed_at is a Unix ms timestamp from the current time', async () => {
+    test('placed_at is a Date object representing the current time', async () => {
         pool.query.mockResolvedValueOnce({ rows: [] });
-        const before = Date.now();
+        const before = new Date();
         await addSideBet('m1', 'u1', 'first_tower', 'red', 50);
-        const after = Date.now();
+        const after = new Date();
         const placedAt = pool.query.mock.calls[0][1][5];
-        expect(placedAt).toBeGreaterThanOrEqual(before);
-        expect(placedAt).toBeLessThanOrEqual(after);
+        expect(placedAt).toBeInstanceOf(Date);
+        expect(placedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+        expect(placedAt.getTime()).toBeLessThanOrEqual(after.getTime());
     });
 
     test('works for both event types', async () => {

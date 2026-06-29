@@ -3,7 +3,7 @@ const { pool } = require('./db');
 const addSideBet = async (matchId, userId, eventType, prediction, amount) => {
     await pool.query(
         'INSERT INTO side_bets (match_id, user_id, event_type, prediction, amount, placed_at) VALUES ($1,$2,$3,$4,$5,$6)',
-        [matchId, userId, eventType, prediction, amount, Date.now()]
+        [matchId, userId, eventType, prediction, amount, new Date()]
     );
 };
 

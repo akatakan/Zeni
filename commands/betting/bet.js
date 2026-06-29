@@ -147,7 +147,7 @@ module.exports = {
 
             const matchId = `${activeGame.platformId}_${activeGame.gameId}`;
             // gameLength = maçın kaç saniyedir devam ettiği; gerçek başlangıç timestamp'i hesaplanır
-            const matchStartedAt = Date.now() - activeGame.gameLength * 1000;
+            const matchStartedAt = new Date(Date.now() - activeGame.gameLength * 1000);
             await betRepository.createMatchBet(matchId, interaction.user.id, matchStartedAt, summoner.puuid, region, interaction.channelId, betMode);
 
             const joinBtn = new ButtonBuilder()

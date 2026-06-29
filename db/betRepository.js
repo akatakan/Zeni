@@ -59,7 +59,7 @@ const getDailyMatchCount = async (userId) => {
     todayStart.setHours(0, 0, 0, 0);
     const res = await pool.query(
         'SELECT COUNT(*) as count FROM matches_bets WHERE creator_id = $1 AND started_at >= $2',
-        [userId, todayStart.getTime()]
+        [userId, todayStart]
     );
     return parseInt(res.rows[0].count);
 };

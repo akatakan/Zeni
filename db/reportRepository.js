@@ -3,7 +3,7 @@ const { pool } = require('./db');
 const addReport = async (guildId, reporterId, reportedId, matchId, reason) => {
     await pool.query(
         'INSERT INTO reports (guild_id, reporter_id, reported_id, match_id, reason, created_at) VALUES ($1,$2,$3,$4,$5,$6)',
-        [guildId, reporterId, reportedId, matchId || null, reason || null, Date.now()]
+        [guildId, reporterId, reportedId, matchId || null, reason || null, new Date()]
     );
 };
 

@@ -158,7 +158,7 @@ async function resolveMatch(matchId, summoner, region, client) {
 
                 const eventKey = sb.event_type === 'first_blood' ? 'side_bet.event_blood' : 'side_bet.event_tower';
                 if (isWin) {
-                    await sendDM(client, sb.user_id, t('side_bet.dm.won', { event: t(eventKey), amount: payout }));
+                    await sendDM(client, sb.user_id, t('side_bet.dm.won', { event: t(eventKey), amount: payout, wagered: sb.amount, profit: payout - sb.amount }));
                 } else {
                     await sendDM(client, sb.user_id, t('side_bet.dm.lost', { event: t(eventKey), amount: sb.amount }));
                 }
